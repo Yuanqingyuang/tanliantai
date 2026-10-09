@@ -1,0 +1,19 @@
+# Office 临时锁文件
+~$*.docx
+~$*.doc
+~$*.xlsx
+~$*.xls
+~$*.pptx
+~$*.ppt
+
+# 系统与编辑器杂物
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# 压缩包 / 备份
+*.zip
+*.rar
+*.7z
+*.bak
+*.tmp
