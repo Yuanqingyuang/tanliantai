@@ -19,8 +19,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # ---------------------------------------------------------------------------
+  # 结构与文档级检查：必需路径、空文件、目录约定
+  # ---------------------------------------------------------------------------
   structure:
-    name: 结构与文档级检查
+    name: structure
     runs-on: ubuntu-latest
     steps:
       - name: 检出仓库
@@ -38,3 +41,69 @@ jobs:
       # 环境自检在 CI 上可能因容器专用条件失败，不阻塞，但必须打印输出
       - name: 环境自检（失败不阻塞）
         run: python environment/scripts/check_environment.py || true
+
+  # ---------------------------------------------------------------------------
+  # 数据安全扫描：拦截真实企业数据与凭据入库（AGENTS.md R4）
+  # ---------------------------------------------------------------------------
+  data-safety:
+    name: data-safety
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+
+      - name: 安装 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 扫描凭据与疑似真实数据
+        run: python tools/check_data_safety.py
+
+  # ---------------------------------------------------------------------------
+  # 链接校验：文档中的相对路径必须可解析（AGENTS.md R8）
+  # ---------------------------------------------------------------------------
+  links:
+    name: links
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+
+      - name: 安装 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 校验相对链接
+        run: python tools/check_links.py --quiet
+
+  # ---------------------------------------------------------------------------
+  # 治理与改动联动门禁：模板/ADR 结构、待确认留痕、改动联动规则
+  # （AGENTS.md R1 / R3 / R5 / R6 / R9）
+  # 建议在分支保护中把本 job 设为 required；见 docs/decisions/0002 提案。
+  # ---------------------------------------------------------------------------
+  change-guard:
+    name: change-guard
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出仓库（完整历史，供变更集比对）
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 安装 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # PR 场景取 GITHUB_BASE_REF，push 场景回退 main；取不到也不会误伤（脚本按通过处理）。
+      # 注意：push 到 main 时基线与 HEAD 相同、变更集为空，本 job 等同空跑，实质只在 PR 场景生效。
+      - name: 获取基线分支
+        run: git fetch --no-tags origin "${GITHUB_BASE_REF:-main}" --quiet || true
+
+      - name: 治理结构校验（含「待确认」留痕）
+        run: python tools/check_governance.py --changed-only
+
+      - name: 文档联动校验（R3 / R6）
+        run: python tools/check_doc_sync.py

@@ -91,12 +91,18 @@ tanliantai/
 git clone https://github.com/Yuanqingyuang/tanliantai.git
 cd tanliantai
 
-# 2. 校验目录结构是否完整
+# 2. 提交前自检（以下命令均应为退出码 0）
 python tools/check_repo_structure.py
+python tools/check_links.py
+python tools/check_data_safety.py
+python tools/check_governance.py --changed-only
+python tools/check_doc_sync.py
 
-# 3. 校验本地环境（Python 版本、编码、Git、数据安全提示）
+# 3. 校验本地环境（Python 版本、编码、Git）
 python environment/scripts/check_environment.py
 ```
+
+以上检查即 CI 门禁 `structure` / `data-safety` / `links` / `change-guard` 的内容，详见 [tools](tools/README.md)。
 
 阅读顺序建议：本 README → [产品文档](docs/product/README.md) → [架构文档](docs/architecture/README.md) → [版本规划](docs/planning/README.md)。
 

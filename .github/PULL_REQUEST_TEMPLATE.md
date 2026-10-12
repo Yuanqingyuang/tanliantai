@@ -55,6 +55,11 @@
 - 本地运行的检查与结果：
   - [ ] `python3 tools/check_repo_structure.py`（结果与退出码：）
   - [ ] `python3 environment/scripts/check_environment.py`（结果与退出码：）
+  - [ ] `python3 tools/check_links.py`（结果与退出码：）
+  - [ ] `python3 tools/check_data_safety.py`（结果与退出码：）
+  - [ ] `python3 tools/check_governance.py --changed-only`（结果与退出码：）
+  - [ ] `python3 tools/check_doc_sync.py`（结果与退出码：）
+- CI 门禁：`structure`、`data-safety`、`links`、`change-guard` 四项为合并门槛，须全绿（见 [../docs/decisions/0002-agent-governance-framework.md](../docs/decisions/0002-agent-governance-framework.md)）。
 - 单元测试：
 - 集成测试：
 - 验收测试 / 复算：

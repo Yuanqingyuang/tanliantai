@@ -38,6 +38,7 @@
 
 ## 四、任务执行约定
 
+- 先定级：给变更定级（T0 轻量 / T1 常规 / T2 敏感，见 [.agents/policies/boundaries.md](.agents/policies/boundaries.md) 第 5 节），据此决定要走多少流程，不做过度流程也不偷工。
 - 开工前：把任务拆成可验证的步骤，明确**目标 / 范围 / 非目标 / 验收标准 / 影响目录**（模板见 [.agents/templates/task.md](.agents/templates/task.md)）。
 - 执行中：小步提交；同一时间只改自己负责的文件范围；需要与他人并行时先划分文件范围（见 [.agents/policies/collaboration.md](.agents/policies/collaboration.md)）。
 - 收尾时：按 [.agents/templates/delivery-report.md](.agents/templates/delivery-report.md) 输出交付报告；在 `CHANGELOG.md` 记录用户可见的变化。
@@ -51,6 +52,8 @@
 | 改核算规则 / 公式 / 因子 / 分摊 | [.agents/workflows/calculation-change.md](.agents/workflows/calculation-change.md) |
 | 代码或文档评审 | [.agents/workflows/review.md](.agents/workflows/review.md) |
 | 发版 / 结题材料冻结 | [.agents/workflows/release.md](.agents/workflows/release.md) |
+| 写文档 / 报告 / 材料 | [.agents/workflows/authoring.md](.agents/workflows/authoring.md) |
+| 领取任务 / 登记与跟踪 | [docs/planning/tasks.md](docs/planning/tasks.md) |
 | 查"该读哪些资料" | [.agents/context-map.md](.agents/context-map.md) |
 | 人怎么和 Agent 协作 | [CONTRIBUTING.md](CONTRIBUTING.md) |
 
@@ -60,3 +63,4 @@
 - 禁止把 `tools/`、`environment/scripts/` 的自检脚本当作"可选"——结构与环境自检必须通过或明确记录例外。
 - 禁止使用真实企业数据做示例、截图或答辩演示（含截图中的料号、客户名、价格）。
 - 禁止在文档中承诺未经验证的指标结论（如"可以降低 80% 成本"）。
+- 禁止绕过自动化门禁：`.github/workflows/repo-checks.yml` 的 `structure`、`data-safety`、`links`、`change-guard` 任一失败即不可合并；改核算口径却未同批更新登记表、`CHANGELOG.md` 或 ADR 会被 `change-guard` 拦截（见 [ADR 0002](docs/decisions/0002-agent-governance-framework.md)）。

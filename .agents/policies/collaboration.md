@@ -28,7 +28,7 @@
 | 关键依据缺失且阻塞 | 停止该分支，交付其余可完成部分，并明确列出阻塞点 |
 | 规则冲突 | 以 `AGENTS.md` > `.agents/policies/` > `workflows/` > 其他文档 的顺序裁决，并回报冲突 |
 | 任务类型不在 [`context-map.md`](../context-map.md) | 不猜测，请项目负责人确认任务归属 |
-| 需要越界修改 | 按 [`boundaries.md`](boundaries.md) 第 6 节提报批准，不擅自推进 |
+| 需要越界修改 | 按 [`boundaries.md`](boundaries.md) 第 7 节提报批准，不擅自推进 |
 | 可能影响核算结果 | 一律按"有影响"处理，走 [`calculation-change.md`](../workflows/calculation-change.md) |
 
 禁止行为：把不确定项写成断言；用"大概""应该是"替代依据；静默选择一个口径继续做。

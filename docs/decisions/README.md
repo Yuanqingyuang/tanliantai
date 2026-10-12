@@ -22,7 +22,7 @@
 NNNN-短横线小写英文标题.md     例：0001-deterministic-calculation-vs-ai-copilot.md
 ```
 
-每份 ADR 使用以下结构（复制 [模板](../development/README.md) 中的字段即可）：
+每份 ADR 使用以下结构（直接复制下方模板）：
 
 ```markdown
 # NNNN. 决策标题
@@ -44,6 +44,7 @@ NNNN-短横线小写英文标题.md     例：0001-deterministic-calculation-vs-
 | 编号 | 标题 | 状态 | 影响范围 |
 | --- | --- | --- | --- |
 | [0001](0001-deterministic-calculation-vs-ai-copilot.md) | 确定性核算与 AI 副驾驶的边界 | 已接受 | 架构、核算、数据审核、数据包 |
+| [0002](0002-agent-governance-framework.md) | Agent 协作框架：把协作规范落到可执行机制 | 提议 | 仓库治理、CI 门禁、协作流程、`tools/` |
 
 ## 四、待决策清单（尚未形成 ADR）
 

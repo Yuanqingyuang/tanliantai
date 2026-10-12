@@ -5,6 +5,7 @@
 用途
     按仓库目录约定检查必需的文件与目录是否齐备，输出分类报告与缺失计数汇总。
     该脚本被本地自检与 GitHub Actions（.github/workflows/repo-checks.yml）共同复用。
+    数据安全（真实企业数据与凭据）扫描已拆分为独立脚本 tools/check_data_safety.py。
 
 约束
     * 仅使用 Python 标准库，兼容 Python 3.9 及以上版本；
@@ -22,12 +23,11 @@
 """
 
 import argparse
-import os
 import sys
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
-# 必需路径清单（与仓库目录约定一一对应，共 66 条）
+# 必需路径清单（与仓库目录约定一一对应，共 74 条）
 # ---------------------------------------------------------------------------
 REQUIRED_FILES = [
     # 仓库根
@@ -45,6 +45,7 @@ REQUIRED_FILES = [
     ".agents/workflows/calculation-change.md",
     ".agents/workflows/review.md",
     ".agents/workflows/release.md",
+    ".agents/workflows/authoring.md",
     ".agents/policies/boundaries.md",
     ".agents/policies/testing.md",
     ".agents/policies/data-security.md",
@@ -62,8 +63,10 @@ REQUIRED_FILES = [
     "docs/architecture/README.md",
     "docs/development/README.md",
     "docs/planning/README.md",
+    "docs/planning/tasks.md",
     "docs/decisions/README.md",
     "docs/decisions/0001-deterministic-calculation-vs-ai-copilot.md",
+    "docs/decisions/0002-agent-governance-framework.md",
     # 知识库
     "knowledge/README.md",
     "knowledge/domain/README.md",
@@ -105,10 +108,15 @@ REQUIRED_FILES = [
     # 工具与资源
     "tools/README.md",
     "tools/check_repo_structure.py",
+    "tools/check_links.py",
+    "tools/check_data_safety.py",
+    "tools/check_doc_sync.py",
+    "tools/check_governance.py",
     "resources/链碳台_logo.png",
     # CI 与协作模板
     ".github/workflows/repo-checks.yml",
     ".github/PULL_REQUEST_TEMPLATE.md",
+    ".github/CODEOWNERS",
 ]
 
 # 关键路径：以上清单的子集，缺失时必须失败（此处冗余显式声明，便于人工核对）
@@ -116,12 +124,6 @@ CRITICAL_FILES = [
     ".github/workflows/repo-checks.yml",
     "docs/decisions/0001-deterministic-calculation-vs-ai-copilot.md",
 ]
-
-# 疑似真实企业数据的扫描范围与规则（只提示，不失败）
-SUSPICIOUS_SCAN_DIRS = ("data", "tests/fixtures")
-SUSPICIOUS_SUFFIXES = (".xlsx", ".xls", ".csv", ".docx", ".doc", ".zip", ".rar", ".7z")
-SUSPICIOUS_KEYWORDS = ("真实", "客户", "供应商", "报价", "bom_", "料号")
-SKIP_DIR_NAMES = (".git", "__pycache__", ".venv", "venv", "node_modules", ".pytest_cache")
 
 
 def force_utf8_streams():
@@ -167,34 +169,6 @@ def check_required(root, quiet):
     return missing, empty_files, ok_count
 
 
-def scan_suspicious(root):
-    """扫描 data/ 与 tests/fixtures/ 下疑似真实企业数据的文件，仅用于提示。"""
-    hits = []
-    for rel_dir in SUSPICIOUS_SCAN_DIRS:
-        base = root / rel_dir
-        if not base.is_dir():
-            continue
-        for dirpath, dirnames, filenames in os.walk(str(base)):
-            dirnames[:] = [d for d in dirnames if d not in SKIP_DIR_NAMES]
-            for name in filenames:
-                lower = name.lower()
-                if not lower.endswith(SUSPICIOUS_SUFFIXES):
-                    continue
-                reason = "扩展名疑似真实数据文件"
-                for keyword in SUSPICIOUS_KEYWORDS:
-                    if keyword in lower:
-                        reason = "文件名含敏感关键字：" + keyword
-                        break
-                full = Path(dirpath) / name
-                try:
-                    shown = full.relative_to(root).as_posix()
-                except ValueError:
-                    shown = full.as_posix()
-                hits.append((shown, reason))
-    hits.sort()
-    return hits
-
-
 def main(argv=None):
     force_utf8_streams()
     parser = argparse.ArgumentParser(
@@ -220,7 +194,6 @@ def main(argv=None):
     missing, empty_files, ok_count = check_required(root, args.quiet)
 
     critical_missing = [rel for rel in CRITICAL_FILES if rel in missing]
-    suspicious = scan_suspicious(root)
 
     print("")
     print("===== 链碳台仓库结构校验汇总 =====")
@@ -230,7 +203,6 @@ def main(argv=None):
     print("缺失                  ：%d" % len(missing))
     print("空文件（0 字节 .md）  ：%d" % len(empty_files))
     print("关键路径缺失          ：%d" % len(critical_missing))
-    print("数据安全提示（WARN）  ：%d" % len(suspicious))
 
     if missing:
         print("")
@@ -243,14 +215,6 @@ def main(argv=None):
         print("-- 0 字节必需 Markdown 清单 --")
         for rel in empty_files:
             print("  [EMPTY  ] " + rel)
-
-    if suspicious:
-        print("")
-        print("-- 数据安全提示（仅警告，不阻塞） --")
-        for rel, reason in suspicious:
-            print("  [WARN   ] %s（%s）" % (rel, reason))
-        print("  提示：企业真实 BOM 与工艺数据不得提交进 Git，")
-        print("        请参照 .agents/policies/data-security.md 与 data/examples/README.md 处理。")
 
     print("")
     if missing or empty_files:
