@@ -1,0 +1,56 @@
+# 链碳台（CHAINPCF）统一基础文件格式
+# 参考：https://editorconfig.org
+# 规则：UTF-8 无 BOM、LF 换行、文件末尾留一个空行
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+# ---------- Markdown ----------
+[*.md]
+# 表格与硬换行依赖行尾空格，关闭去尾空格以免破坏渲染
+trim_trailing_whitespace = false
+
+# ---------- Python ----------
+[*.py]
+indent_size = 4
+max_line_length = 100
+
+# ---------- 配置与数据 ----------
+[*.{json,yml,yaml,toml,ini,cfg}]
+indent_size = 2
+
+[*.{json,jsonc}]
+insert_final_newline = true
+
+# ---------- 脚本 ----------
+[*.{sh,bash}]
+indent_size = 2
+
+[*.ps1]
+indent_size = 4
+end_of_line = crlf
+
+[*.{bat,cmd}]
+end_of_line = crlf
+
+# ---------- 前端与样式（技术栈待定，先约定） ----------
+[*.{js,jsx,ts,tsx,css,scss,html,vue}]
+indent_size = 2
+
+# ---------- 数据文件 ----------
+[*.{csv,tsv}]
+end_of_line = lf
+
+# ---------- 二进制与生成物 ----------
+[*.{png,jpg,jpeg,gif,ico,pdf,pptx,docx,xlsx,zip}]
+charset = unset
+end_of_line = unset
+insert_final_newline = unset
+trim_trailing_whitespace = unset

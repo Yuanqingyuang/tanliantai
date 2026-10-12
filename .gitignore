@@ -1,4 +1,89 @@
-# Office 临时锁文件
+# ============================================================
+# 链碳台（CHAINPCF）忽略规则
+# 原则：真实企业数据、密钥、缓存与构建产物一律不进仓库
+# ============================================================
+
+# ---------- 企业敏感数据与本地数据（红线，勿删） ----------
+# 真实企业 BOM、工艺与生产数据只允许放在仓库外；此处兜底拦截误提交
+data/private/
+data/raw/
+data/客户*/
+*.secret.*
+*_真实数据*
+*_客户数据*
+!data/examples/**
+!data/templates/**
+
+# ---------- 密钥与凭据 ----------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+secrets.json
+service-account*.json
+.token
+
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+.venv/
+venv/
+env/
+.python-version
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.ipynb_checkpoints/
+
+# ---------- Node.js / 前端（技术栈待定，先兜底） ----------
+node_modules/
+.pnpm-store/
+.npm/
+.pnpm-debug.log*
+npm-debug.log*
+yarn-error.log*
+.next/
+.nuxt/
+.output/
+.vite/
+.turbo/
+*.tsbuildinfo
+
+# ---------- 数据库与运行时产物 ----------
+*.db
+*.sqlite
+*.sqlite3
+*.duckdb
+*.parquet
+logs/
+*.log
+!.gitkeep
+
+# ---------- 构建与打包产物 ----------
+*.exe
+*.dll
+*.msi
+*.dmg
+*.AppImage
+*.whl
+*.tar.gz
+
+# ---------- Office 临时锁文件 ----------
 ~$*.docx
 ~$*.doc
 ~$*.xlsx
@@ -6,14 +91,22 @@
 ~$*.pptx
 ~$*.ppt
 
-# 系统与编辑器杂物
+# ---------- 系统与编辑器杂物 ----------
 Thumbs.db
 desktop.ini
 .DS_Store
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+*.swp
+*~
 
-# 压缩包 / 备份
+# ---------- 压缩包与备份 ----------
 *.zip
 *.rar
 *.7z
 *.bak
 *.tmp
+*.orig
+*.rej
