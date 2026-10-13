@@ -9,10 +9,14 @@
 
 | 工具 | 用途 | 调用方式 | 退出码 |
 | --- | --- | --- | --- |
-| [check_repo_structure.py](check_repo_structure.py) | 校验仓库必需文件与目录是否齐备；报告 0 字节必需 Markdown；提示疑似真实数据 | `python3 tools/check_repo_structure.py [--quiet]` | `0` 通过 / `1` 存在缺失或空文件 |
+| [check_repo_structure.py](check_repo_structure.py) | 校验仓库必需文件与目录是否齐备；报告 0 字节必需 Markdown | `python3 tools/check_repo_structure.py [--quiet]` | `0` 通过 / `1` 存在缺失或空文件 |
+| [check_links.py](check_links.py) | 校验所有 Markdown 的相对链接与图片引用是否可解析（跳过外链、锚点、代码块） | `python3 tools/check_links.py [--quiet]` | `0` 通过 / `1` 存在失效链接 |
+| [check_data_safety.py](check_data_safety.py) | 扫描凭据文件（`.env` 及其变体、`*.pem` 等）与疑似真实企业数据；`data/examples`、`data/templates`、`tests/fixtures` 外的数据文件阻塞 | `python3 tools/check_data_safety.py [--quiet]` | `0` 无 BLOCK / `1` 存在 BLOCK |
+| [check_doc_sync.py](check_doc_sync.py) | 按 Git 变更集检查改动联动规则 R3（核算口径）与 R6（文档同步） | `python3 tools/check_doc_sync.py [--base <ref>] [--quiet]` | `0` 满足或无法取基线 / `1` 规则未满足 |
+| [check_governance.py](check_governance.py) | 校验模板章节、ADR 必备字段与索引一致性、任务台账完整性（ID/状态/更新日期/留痕文件）；`--changed-only` 检查新增内容的「待确认」是否带负责人 | `python3 tools/check_governance.py [--changed-only] [--base <ref>] [--branch <name>] [--quiet]` | `0` 通过 / `1` 未通过 |
 | [../environment/scripts/check_environment.py](../environment/scripts/check_environment.py) | 校验开发环境：Python 版本、平台与编码、工作目录、关键路径、Git、`data/` 疑似真实数据 | `python3 environment/scripts/check_environment.py [--quiet]` | `0` 无 FAIL / `1` 存在 FAIL |
 
-两者都要求 Python 3.9+、仅标准库、强制 UTF-8 输出，可安全地在 Windows、Linux 与 CI 上运行。
+以上工具都要求 Python 3.9+、仅标准库、强制 UTF-8 输出，可安全地在 Windows、Linux 与 CI 上运行。
 
 ### 日常用法
 
@@ -45,17 +49,24 @@ python3 tools/check_repo_structure.py --quiet
 | --- | --- | --- | --- |
 | 数据校验工具 | 按 [../data/templates/README.md](../data/templates/README.md) 校验导入文件的字段、单位与必填项 | 数据字典 V0.1 定稿 | 【待确认】 |
 | 知识库检查工具 | 检查 `knowledge/` 下公式、因子、文献条目是否成登记、是否有空条目 | 登记表格式定稿 | 【待确认】 |
-| 脱敏检查工具 | 对 `data/examples/` 与 [../tests/fixtures/README.md](../tests/fixtures/README.md) 做敏感关键字与模式扫描 | 脱敏规则清单 | 【待确认】 |
 | 数据包解析工具 | 解析并校验导出的 `DataPackage` 结构，支持复算 | 数据包规范 V0.1 | 【待确认】 |
 
 规划中的工具在实现前须先确定依赖前提，**不得先写代码再补规范**。
 
 ## 四、与 CI 的关系
 
-`.github/workflows/repo-checks.yml` 在 `push` 与 `pull_request` 到 `main` 时执行：
+`.github/workflows/repo-checks.yml` 在 `push` 与 `pull_request` 到 `main` 时执行，拆为 4 个 job：
 
-1. `python tools/check_repo_structure.py` —— 缺失必需路径即失败；
-2. `python environment/scripts/check_environment.py || true` —— 环境脚本在 CI 上失败不阻塞，但输出保留。
+| job | 执行的命令 | 是否阻塞 |
+| --- | --- | --- |
+| `structure` | `python tools/check_repo_structure.py`；`python environment/scripts/check_environment.py \|\| true` | 结构检查阻塞；环境自检不阻塞 |
+| `data-safety` | `python tools/check_data_safety.py` | 阻塞 |
+| `links` | `python tools/check_links.py --quiet` | 阻塞 |
+| `change-guard` | `python tools/check_governance.py --changed-only`；`python tools/check_doc_sync.py` | 阻塞 |
+
+`change-guard` 需要完整 Git 历史（`fetch-depth: 0`）与可解析的基线分支；取不到基线时脚本按通过处理，不会误伤。该 job 实质在 **PR 场景**生效——`push` 到 `main` 时基线等于 HEAD、变更集为空，等同空跑（直接推送 `main` 本身由分支保护禁止）。
+
+这套门禁是 [ADR 0002](../docs/decisions/0002-agent-governance-framework.md) 中"分层强制模型"的 L3 层：建议在分支保护中把 `structure`、`data-safety`、`links`、`change-guard` 设为 required status checks。
 
 技术栈【待确认】之前，CI 只做**结构与文档级**检查：不编译、不装依赖、不跑单元测试。
 

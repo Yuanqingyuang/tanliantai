@@ -40,12 +40,13 @@
 | [`workflows/calculation-change.md`](workflows/calculation-change.md) | 核算变更流程：依据→登记→复算→版本与指纹→评审（本项目最敏感流程） | 公式/因子/边界/分摊方法任何改动 |
 | [`workflows/review.md`](workflows/review.md) | 审查流程：代码、文档、知识与依据、数据安全四视角检查清单 | 合并前、对外交付前、结题前 |
 | [`workflows/release.md`](workflows/release.md) | 发布流程：版本号、CHANGELOG、数据包规范版本、答辩材料冻结 | 打标签、交付数据包、提交结题材料 |
+| [`workflows/authoring.md`](workflows/authoring.md) | 文档写作流程：定位与依据→大纲→起草→依据核对→一致性→状态标注→人审 | 撰写产品/需求文档、报告、材料、规范 |
 
 ### 2.3 policies（边界与底线）
 
 | 文件 | 用途 |
 | --- | --- |
-| [`policies/boundaries.md`](policies/boundaries.md) | 可改/需 ADR/禁止改动三类目录清单，防止越界修改 |
+| [`policies/boundaries.md`](policies/boundaries.md) | 可改 / 需 ADR / 禁止改动的目录清单，以及变更分级（T0/T1/T2）与必备动作，防止越界与过度流程 |
 | [`policies/testing.md`](policies/testing.md) | unit / integration / acceptance / fixtures 四层职责与确定性核算的回归要求 |
 | [`policies/data-security.md`](policies/data-security.md) | 企业 BOM 与工艺数据的敏感数据规则：最小权限、脱敏、本地部署、日志、禁止入库真实数据 |
 | [`policies/collaboration.md`](policies/collaboration.md) | 人对 Agent 的指令要求、不确定性处理、并行任务文件分区、冲突处理、交付报告要求 |
@@ -71,8 +72,17 @@
 - 不确定处统一写「【待确认】」，并注明需要谁确认（如：指导教师、项目负责人、核算规则负责人）。
 - 编程语言/框架、桌面壳 vs Web 工作台等选型【待确认】，以 `docs/decisions/` 下的 ADR 为准。
 
-## 5. 相关入口
+## 5. 治理层自身的变更控制
 
+`AGENTS.md` 与本目录（`.agents/`）就是规则本身，改动它们属于**敏感变更（T2，见 [`policies/boundaries.md`](policies/boundaries.md) 第 5 节）**。
+
+- 规则的新增、删除或语义修改，必须：① 在 [任务台账](../docs/planning/tasks.md) 登记；② 记入 [CHANGELOG.md](../CHANGELOG.md)；③ 涉及强制力或协作方式的改动（新增检查、改变评审规则等）须先有 ADR。
+- 仅措辞、排版、失效链接修正可降为 T0/T1，但仍需记 CHANGELOG。
+- 规则冲突仍按第 1 节的裁决顺序处理，不因改动者身份而变。
+
+## 6. 相关入口
+
+- 任务台账：[`docs/planning/tasks.md`](../docs/planning/tasks.md)
 - 架构与字段口径：[`docs/architecture/README.md`](../docs/architecture/README.md)
 - 产品与需求：[`docs/product/README.md`](../docs/product/README.md)
 - 开发指南：[`docs/development/README.md`](../docs/development/README.md)

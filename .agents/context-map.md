@@ -24,6 +24,8 @@
 | 做数据包（DataPackage） | [`contracts/README.md`](../contracts/README.md) → [`docs/architecture/README.md`](../docs/architecture/README.md) → [`data/examples/README.md`](../data/examples/README.md) → [`tests/fixtures/README.md`](../tests/fixtures/README.md) | 数据包结构、缺口与质量等级、指纹与修改记录 | development / release |
 | 写测试 | [`.agents/policies/testing.md`](policies/testing.md) → [`tests/fixtures/README.md`](../tests/fixtures/README.md) → [`contracts/README.md`](../contracts/README.md) | 分层测试用例、复算一致性用例、基准数据说明 | development |
 | 准备答辩材料 | [`docs/product/README.md`](../docs/product/README.md) → [`docs/planning/README.md`](../docs/planning/README.md) → [`.agents/policies/collaboration.md`](policies/collaboration.md) | 材料大纲、图表与数据口径核对表、结论与依据对照 | review / release |
+| 写文档 / 报告 / 材料 | [`workflows/authoring.md`](workflows/authoring.md) → [`docs/planning/README.md`](../docs/planning/README.md) → [`knowledge/domain/glossary.md`](../knowledge/domain/glossary.md) | 文档草稿与依据清单、来源登记、状态标注 | authoring |
+| 领任务 / 更新台账 | [`docs/planning/tasks.md`](../docs/planning/tasks.md) → [`context-map.md`](context-map.md) | 台账登记与状态流转 | — |
 | 发版 | [`.agents/workflows/release.md`](workflows/release.md) → [`contracts/README.md`](../contracts/README.md) → [`tests/fixtures/README.md`](../tests/fixtures/README.md) | CHANGELOG、版本号、数据包规范版本、冻结清单 | release |
 | 接触企业真实数据 | [`.agents/policies/data-security.md`](policies/data-security.md) → [`data/examples/README.md`](../data/examples/README.md) | 脱敏方案、访问与操作日志、本地部署选项说明 | development |
 | 新增/调整环境与工具链 | [`environment/README.md`](../environment/README.md) → [`tools/README.md`](../tools/README.md) → [`docs/decisions/README.md`](../docs/decisions/README.md) | 环境说明更新、ADR（若涉及选型） | development |
@@ -37,6 +39,7 @@
 | 结果指纹或计算可回放性 | 提供同输入同结果证据，并在交付报告中写明验证命令与结果 |
 | 权限、脱敏、日志 | 走 [`.agents/policies/data-security.md`](policies/data-security.md) 检查清单 |
 | 任何跨目录大范围改动 | 在 [`templates/task.md`](templates/task.md) 中先声明"影响目录" |
+| 对外材料或含核算结论的文档 | 按 [`workflows/review.md`](workflows/review.md) §7 取得**非作者**签注，并记入 [`docs/planning/tasks.md`](../docs/planning/tasks.md) |
 
 ## 3. 产出物归档位置
 
@@ -46,6 +49,7 @@
 | 架构、字段口径、字典 | [`docs/architecture/`](../docs/architecture/README.md) |
 | 开发与评测说明 | [`docs/development/`](../docs/development/README.md) |
 | 里程碑与计划 | [`docs/planning/`](../docs/planning/README.md) |
+| 任务说明与交付报告 | [`docs/planning/tasks/<任务 ID>/`](../docs/planning/tasks.md) |
 | 选型决策 | [`docs/decisions/`](../docs/decisions/README.md) |
 | 公式与因子登记 | [`knowledge/`](../knowledge/README.md) |
 | 接口与数据契约 | [`contracts/`](../contracts/README.md) |

@@ -30,7 +30,7 @@ import shutil
 import sys
 from pathlib import Path
 
-MIN_PYTHON = (3, 10)
+MIN_PYTHON = (3, 9)
 
 # 必需目录（顶层约定）
 REQUIRED_DIRS = [
@@ -72,8 +72,8 @@ KEY_FILES = [
     ".github/PULL_REQUEST_TEMPLATE.md",
 ]
 
-# 只警告、不失败的文件
-ADVISORY_FILES = [".gitattributes", ".editorconfig"]
+# 只警告、不失败的文件（.editorconfig 已在 KEY_FILES 中作为必需文件）
+ADVISORY_FILES = [".gitattributes"]
 
 SUSPICIOUS_SUFFIXES = (".xlsx", ".xls", ".csv", ".docx", ".doc", ".zip", ".rar", ".7z")
 SUSPICIOUS_KEYWORDS = ("真实", "客户", "供应商", "报价", "bom_", "料号")

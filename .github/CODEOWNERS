@@ -1,0 +1,34 @@
+# CODEOWNERS — 文件分区与评审路由
+#
+# 依据：.agents/policies/collaboration.md §3「同一文件同一时间只有一个负责人」
+#       以及 AGENTS.md 规则 R7「不越界修改」
+# 作用：当 PR 修改下列路径时，GitHub 自动请求对应 owner 评审，把"文件分区"
+#       从一句要求变成平台机制（强制力层 L4）。
+# 生效前提：仓库开启分支保护并勾选 "Require review from Code Owners"
+#           见 docs/decisions/0002-agent-governance-framework.md
+# 【待确认】各模块负责人的 GitHub 用户名（负责人：袁青扬）。补充后按下表替换/细化。
+#
+# 语法：<路径模式>  @用户  @团队
+
+# 默认 owner：规则层、文档层与仓库配置由项目负责人把关
+*                           @Yuanqingyuang @55msi
+
+# ---- 治理与协作层（改动影响全仓库，需负责人评审）----
+/AGENTS.md                  @Yuanqingyuang @55msi
+/CONTRIBUTING.md            @Yuanqingyuang @55msi
+/.agents/                   @Yuanqingyuang @55msi
+/.github/                   @Yuanqingyuang @55msi
+
+# ---- 共享登记类文件：串行修改（collaboration.md §3）----
+# 【待确认】核算方向负责人 GitHub 用户名（负责人：袁青扬）
+/knowledge/                 @Yuanqingyuang @55msi
+/contracts/                 @Yuanqingyuang @55msi
+/tests/fixtures/            @Yuanqingyuang @55msi
+
+# ---- 核算口径相关：改动需人工复核（AGENTS.md R3）----
+/knowledge/formulas/        @Yuanqingyuang @55msi
+/knowledge/emission-factors/ @Yuanqingyuang @55msi
+
+# ---- 工程设施 ----
+/tools/                     @55msi
+/environment/               @55msi
