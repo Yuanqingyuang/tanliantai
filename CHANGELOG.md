@@ -6,6 +6,9 @@
 ## [Unreleased]
 
 ### 新增
+- 技术基线决策：[ADR 0003](docs/decisions/0003-local-web-workbench-baseline.md)（已接受）——确定本地 Web 客户端、Vue 3/FastAPI/PostgreSQL、内网多用户（角色权限前置）、开发期云端 API + 真实数据本地处理。
+- 任务分解：[docs/planning/wbs.md](docs/planning/wbs.md)——按交付物切分五阶段 35 项任务，负责人统一留「待认领」，并在 [任务台账](docs/planning/tasks.md) 登记 T-0002–T-0036。
+- 决策清单：更新 [docs/decisions/README.md](docs/decisions/README.md) 的 D1–D16，标注已形成 ADR 提案与未启动项。
 - Agent 协作框架提案：[ADR 0002](docs/decisions/0002-agent-governance-framework.md)——用"分层强制模型"把 AGENTS.md 规则 R1–R9 从散文规范落到可执行机制（L0 规范 / L1 模板 / L2 本地检查 / L3 CI 门禁 / L4 平台机制）。
 - 确定性检查工具 4 个：[check_links.py](tools/check_links.py)（相对链接）、[check_data_safety.py](tools/check_data_safety.py)（凭据与真实数据）、[check_doc_sync.py](tools/check_doc_sync.py)（改动联动 R3/R6）、[check_governance.py](tools/check_governance.py)（模板/ADR/待确认留痕）。
 - 文件分区机制：[.github/CODEOWNERS](.github/CODEOWNERS)，落地 collaboration.md §3 与规则 R7（需在分支保护中启用 "Require review from Code Owners"）。
