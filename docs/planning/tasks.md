@@ -51,7 +51,7 @@ T-<四位序号>          例：T-0001、T-0002（全项目连续编号，不复
 | ID | 标题 | 类型 | 负责人 | 确认人 | 状态 | 影响目录 | 关联 PR | 确认 | 更新 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | T-0001 | 建立 Agent 协作框架（确定性检查 + CI 门禁 + 协作/写作流程） | 工程配置 / CI | Agent（监督：赵天志） | 袁青扬（@Yuanqingyuang） | 待评审 | `.github/`、`tools/`、`.agents/`、`docs/`、`README.md`、`AGENTS.md`、`CONTRIBUTING.md`、`CHANGELOG.md` | 待填 | — | 2026-10-12 |
-| T-0002 | 技术基线 ADR 0003（应用形态/技术栈/部署/模型） | 架构决策 | Agent（监督：待定） | 待确认 | 待评审 | `docs/decisions/`、`docs/architecture/`、`docs/planning/`、`CHANGELOG.md` | — | — | 2026-10-27 |
+| T-0002 | 技术基线 ADR 0003（应用形态/技术栈/部署/模型） | 架构决策 | Agent（监督：待指定） | 待确认 | 待评审 | `docs/decisions/`、`docs/architecture/`、`docs/planning/`、`CHANGELOG.md` | #2 | — | 2026-10-27 |
 | T-0003 | 标准与政策梳理（GB/T 24067-2024 等） | 文档/标准 | 待认领 | 待确认 | 待认领 | `knowledge/references/` | — | — | 2026-10-27 |
 | T-0004 | 术语、单位与公式基线 | 知识库 | 待认领 | 待确认 | 待认领 | `knowledge/domain/`、`knowledge/formulas/` | — | — | 2026-10-27 |
 | T-0005 | PCBA-SMT 工序链与设备清单 | 调研/知识库 | 待认领 | 待确认 | 待认领 | `knowledge/domain/` | — | — | 2026-10-27 |
