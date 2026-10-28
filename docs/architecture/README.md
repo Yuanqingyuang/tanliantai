@@ -107,7 +107,5 @@ BOM 导入 ──► BOMItem ──┐
 
 ## 七、待确认项
 
-- 【待确认】整体技术栈：语言、框架、数据库、是否需要本地部署打包（见 [docs/decisions](../decisions/README.md)）。
-- 【待确认】`app/` 的形态是桌面应用外壳还是 Web 工作台（PPT 中成员分工写的是"Web 工作台前端"，目录命名为"桌面应用外壳"，两者需统一）。
-- 【待确认】数据包交换格式与是否对齐客户模板（影响 `data_package` 契约）。
-- 【待确认】AI 模型调用方式：本地模型 / 云端接口 / 混合，以及数据出域边界。
+- 【待确认】数据包交换格式与是否对齐客户模板（影响 `data_package` 契约）；负责人：数据包负责人；确认人：待确认。
+- 技术栈、`app/` 形态、部署并发与模型调用方式已由 [ADR 0003](../decisions/0003-local-web-workbench-baseline.md) 确定：Web 客户端、Vue 3 + TypeScript / FastAPI / PostgreSQL、内网多用户、开发期云端 + 真实数据本地。
