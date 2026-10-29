@@ -20,14 +20,17 @@
 - R2 的机器可验证形式：新增"架构不变量"必测项（[testing.md §3](.agents/policies/testing.md)），断言 AI 输出永不进入核算输入路径。
 - 治理层自身的变更控制：[.agents/README.md §5](.agents/README.md)——`AGENTS.md` 与 `.agents/` 的规则性改动按敏感变更管理（台账 + CHANGELOG + 必要时 ADR）。
 - 任务留痕的落点与校验：以 [docs/planning/tasks/T-0001/](docs/planning/tasks/T-0001/task.md) 作为任务说明与交付报告的归档实例；`check_governance.py` 新增任务台账完整性校验（ID、状态、更新日期、留痕文件是否存在，以及分支名与任务号的关联）。
+- 阶段一排期建议稿：[阶段一任务书](docs/planning/phase-1-task-book.md)——按角色 R1–R5 组织九项任务的交付物、人日与逐周行动参考，明确 T-0005 的 a/b 交付段、五个角色的确认人建议与阶段一关口材料。
 
 ### 变更
 - [check_repo_structure.py](tools/check_repo_structure.py)：移除重复的警告级敏感数据扫描（改由 `check_data_safety.py` 承担阻塞职责），并把新增的脚本、CODEOWNERS 与 ADR 0002 纳入必需路径清单。
+- [WBS](docs/planning/wbs.md)：按阶段一实际排期修正依赖——T-0005 不再依赖 T-0003、T-0006 与 T-0005 解耦（取 a 段初稿为非阻塞输入）、T-0007 改依 T-0003 与 T-0010、T-0008 只依赖 T-0005 a 段（T-0004 为术语参考）；T-0008 验收口径改为只由指导教师签注。
 
 ### 修复
 - 治理检查：[check_governance.py](tools/check_governance.py) 现可识别带对象的 `【待确认：…】`（此前只认裸形式，导致知识库写法普遍漏检）；ADR 校验新增 `> 日期：` 必备字段，并补齐 [ADR 0001](docs/decisions/0001-deterministic-calculation-vs-ai-copilot.md) 的日期。
 - 联动检查：[check_doc_sync.py](tools/check_doc_sync.py) 的 R3 报错文案去掉已不属其触发范围的 `contracts`；`change-guard` 明确"仅 PR 场景生效"。
 - 一致性：统一 Python 下限为 3.9（[check_environment.py](environment/scripts/check_environment.py) 由 3.10 下调）；[.gitignore](.gitignore) 放行 `.env.sample`/`.env.template`；文档状态词表补"规划中"；CHANGELOG 分组词表补"计划中/已知缺口"；修正 [CONTRIBUTING.md](CONTRIBUTING.md) 任务号的自相矛盾与 [review.md §7](.agents/workflows/review.md) 的引用。
+- 归属回填：[任务台账](docs/planning/tasks.md) 中 T-0001 负责人更正为赵天志（@55msi）并回填 PR #1，T-0002 补确认人袁青扬（@Yuanqingyuang）；两份任务的说明与交付报告同步执行人。台账「确认」列仍为「—」，合并 PR 不等于签注。
 
 ### 计划中
 - 数据字典 V0.1 与碳数据包规范 V0.1（2026.12—2027.01）

@@ -8,7 +8,7 @@
 | --- | --- |
 | 任务名称 | 建立 Agent 协作框架（确定性检查 + CI 门禁 + 协作/写作流程） |
 | 对应任务说明 | [task.md](task.md) |
-| 执行人 / Agent | Agent（监督：赵天志） |
+| 执行人 / Agent | 赵天志（@55msi） |
 | 交付范围 | `.github/`、`tools/`、`.agents/`、`docs/`、根级文档 |
 | 遵守的流程 | development |
 
