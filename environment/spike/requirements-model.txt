@@ -1,0 +1,4 @@
+# 仅本地模型实测需要；数据库验证只需 requirements.txt
+# 模型权重不随仓库分发，见 README 第六节
+sentence-transformers>=5.0,<6
+psutil>=7.0,<8

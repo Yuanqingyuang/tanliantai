@@ -32,6 +32,7 @@
 - 2026-10-27：新增[详细技术方案与八部分申报内容建议稿](docs/product/technical-research-proposal-2026.md)，补充语言与框架、模块设计、研究来源、四组实验、年度进度及可核验的前期基础。
 - 新增 [ADR 0002](docs/decisions/0002-proposed-local-web-stack.md) 技术栈提议，以及任务说明与交付记录；选型待团队确认，本次未实现业务代码或修改核算规则、因子及正式契约。
 
+- T-0010 技术验证骨架：[environment/spike/](environment/spike/README.md)——PostgreSQL 16/17/18 三版本编排、NUMERIC / JSONB / 并发 / 越权验证脚本、AIProvider 三态（mock / local / cloud）与本地模型实测脚本；[T-0010 技术验证报告](docs/development/T-0010-技术验证报告.md)、[版本锁定清单](environment/version-lock.md) 与 [交付报告](docs/planning/tasks/T-0010/delivery-report.md)（数据库、本地模型与 AIProvider 均已实测，待确认人签注）。
 
 ### 变更
 - [check_repo_structure.py](tools/check_repo_structure.py)：移除重复的警告级敏感数据扫描（改由 `check_data_safety.py` 承担阻塞职责），并把新增的脚本、CODEOWNERS 与 ADR 0002 纳入必需路径清单。
