@@ -96,3 +96,5 @@ T-<四位序号>          例：T-0001、T-0002（全项目连续编号，不复
   - `delivery-report.md`：按 [.agents/templates/delivery-report.md](../../.agents/templates/delivery-report.md) 填写。
 - 状态进入「待评审」后，这两份文件必须已存在——`check_governance.py` 会校验（见 [tools/README.md](../../tools/README.md)）。
 - 台账行的「关联 PR」在 PR 开出后回填；「确认」由确认人在签注时填写（缺一不算完成，见 [review.md §7](../../.agents/workflows/review.md)）。
+
+| T-0037 | 拉取主分支并同步本地申报与答辩材料 | T1 文档同步 | Agent（监督：袁青扬） | 袁青扬 | 进行中 | `docs/product/`、`docs/planning/`、`docs/decisions/`、`CHANGELOG.md`、`tools/`、本地预算截图 | — | 用户已授权合并及推送，材料学术评审不在本次范围 | 2026-11-02 |

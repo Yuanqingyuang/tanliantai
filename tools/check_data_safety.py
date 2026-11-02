@@ -16,6 +16,8 @@
         * 文件名含强敏感关键字：真实、客户、供应商、报价、料号；
         * 数据类后缀（.xlsx/.xls/.csv/.docx/.doc/.zip/.rar/.7z）出现在
           data/examples、data/templates、tests/fixtures 之外的目录。
+          已核对申报Word仅在document-artifacts.json完整路径与SHA-256匹配时
+          免除此目录后缀规则，凭据和强敏感文件名规则始终生效。
     WARN（仅提示，不阻塞）
         * 文件名含 bom_；
         * 数据类后缀出现在 data/examples、data/templates 或 tests/fixtures 下
@@ -38,6 +40,8 @@
 """
 
 import argparse
+import hashlib
+import json
 import os
 import sys
 from pathlib import Path
@@ -120,7 +124,7 @@ def is_credential_name(name_lower):
     return False
 
 
-def filename_blocks(name_lower, rel):
+def filename_blocks(name_lower, rel, approved_document=False):
     """返回文件名级的 BLOCK 原因列表。"""
     reasons = []
     if is_credential_name(name_lower):
@@ -131,9 +135,31 @@ def filename_blocks(name_lower, rel):
         if keyword in name_lower:
             reasons.append("文件名含强敏感关键字：" + keyword)
             break
-    if name_lower.endswith(DATA_SUFFIXES) and not is_under(rel, ALLOWED_DATA_DIRS):
+    if name_lower.endswith(DATA_SUFFIXES) and not is_under(rel, ALLOWED_DATA_DIRS) and not approved_document:
         reasons.append("数据类文件位于非示例/模板目录")
     return reasons
+
+
+def load_document_artifacts(root):
+    """Only exact, hash-pinned application Word files can bypass the location check."""
+    manifest = root / "tools/document-artifacts.json"
+    if not manifest.exists():
+        return set()
+    data = json.loads(manifest.read_text(encoding="utf-8"))
+    if data.get("schema_version") != 1:
+        raise ValueError("unsupported document artifact manifest")
+    approved = set()
+    for item in data["artifacts"]:
+        rel = item["path"]
+        # Never allow credentials, arbitrary directories, globs or data spreadsheets.
+        if (not rel.startswith("docs/product/") or ".." in Path(rel).parts
+                or Path(rel).suffix.lower() != ".docx"
+                or len(Path(rel).parts) != 3):
+            raise ValueError("invalid document artifact path")
+        file = root / rel
+        if file.is_file() and hashlib.sha256(file.read_bytes()).hexdigest() == item["sha256"]:
+            approved.add(rel)
+    return approved
 
 
 def filename_warns(name_lower, rel):
@@ -182,6 +208,12 @@ def main(argv=None):
         print("[FAIL] 仓库根目录不存在或不是目录：%s" % root)
         return 1
 
+    try:
+        approved_documents = load_document_artifacts(root)
+    except (ValueError, KeyError, TypeError, OSError) as exc:
+        print("[FAIL] 文档归档清单不可用：%s" % exc)
+        return 1
+
     blocks = []
     warns = []
     scanned = 0
@@ -189,7 +221,7 @@ def main(argv=None):
         rel = rel_posix(path, root)
         name_lower = path.name.lower()
         scanned += 1
-        for reason in filename_blocks(name_lower, rel):
+        for reason in filename_blocks(name_lower, rel, rel in approved_documents):
             blocks.append((rel, reason))
         for reason in filename_warns(name_lower, rel):
             warns.append((rel, reason))

@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "artifacts": [
+    {
+      "path": "docs/product/链碳台_创新训练计划项目申报书.docx",
+      "sha256": "e16b5630c22978e6057d1fcbe14b0745bd0be313128f3d8d01f9a4ac339330a3",
+      "purpose": "链碳台申报书或任务书历史版本，非企业业务数据",
+      "inspection": "2026-11-02 Codex核对项目文档结构，无嵌入附件及私钥/token格式；用户授权同步项目资料"
+    },
+    {
+      "path": "docs/product/链碳台_创新训练计划项目申报书v2.0.docx",
+      "sha256": "4854c5a9d5a19ef02f5b0a190de64ea60e3832d48c45b2b9ab85df5ac5dc1be4",
+      "purpose": "链碳台申报书或任务书历史版本，非企业业务数据",
+      "inspection": "2026-11-02 Codex核对项目文档结构，无嵌入附件及私钥/token格式；用户授权同步项目资料"
+    },
+    {
+      "path": "docs/product/链碳台_创新训练计划项目申报书_两年图示修订版.docx",
+      "sha256": "4804e31c7d0d0a3be1163329cbbb50bc49f63c2fecc417f9582edcfe0749c9b7",
+      "purpose": "链碳台申报书或任务书历史版本，非企业业务数据",
+      "inspection": "2026-11-02 Codex核对项目文档结构，无嵌入附件及私钥/token格式；用户授权同步项目资料"
+    },
+    {
+      "path": "docs/product/链碳台_创新训练计划项目申报书_学术规范图表版.docx",
+      "sha256": "a07ecd36b44aa2a0cbbc9f0d52999042db422532f357855ce9df937c8704ecd9",
+      "purpose": "链碳台申报书或任务书历史版本，非企业业务数据",
+      "inspection": "2026-11-02 Codex核对项目文档结构，无嵌入附件及私钥/token格式；用户授权同步项目资料"
+    },
+    {
+      "path": "docs/product/链碳台_创新训练项目申请书_2026修订版.docx",
+      "sha256": "23d0d6ee2320921d8976c9c9307e373f135d102155b72d54d7dd93fea019adcb",
+      "purpose": "链碳台申报书或任务书历史版本，非企业业务数据",
+      "inspection": "2026-11-02 Codex核对项目文档结构，无嵌入附件及私钥/token格式；用户授权同步项目资料"
+    },
+    {
+      "path": "docs/product/链碳台_创新训练项目申请书_2026完善版.docx",
+      "sha256": "af9e986cdf4cf7efe90b982bed69913279a8581aaf03f944513e82405854cc3f",
+      "purpose": "链碳台申报书或任务书历史版本，非企业业务数据",
+      "inspection": "2026-11-02 Codex核对项目文档结构，无嵌入附件及私钥/token格式；用户授权同步项目资料"
+    }
+  ]
+}
