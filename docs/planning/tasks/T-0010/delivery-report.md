@@ -48,7 +48,7 @@
 | 2 | NUMERIC / JSONB / 并发 / 越权 | `db_checks.py` 对 5433 / 5434 / 5435 各跑一次 | 三版本全部 `pass=true` | [验证报告 §3–§6](../../../../docs/development/T-0010-技术验证报告.md) |
 | 3 | 清空卷后从零重建 | `compose down -v` 后 `up -d`，再跑 5433 | 通过（`pass=true`） | 报告 §10 |
 | 4 | AIProvider 三态切换 | `ai_provider.py --compare` | mock 正常；local / cloud 未配置时显式 `unavailable` | 报告 §8 |
-| 5 | 本地模型四项指标 | `model_bench.py`，100 条合成文本，BGE-M3 与 m3e-base 各一次 | BGE-M3 编码 122.9 ms、内存 1.870 GB、冷启动 11.086 s（超阈值）；m3e-base 36.1 ms / 0.800 GB / 8.831 s（全部达标） | 报告 §7 |
+| 5 | 本地模型四项指标 | `model_bench.py`，100 条合成文本，BGE-M3 与 m3e-base 各一次 | BGE-M3 编码 122.9 ms、内存 1.870 GB、冷启动 11.086 s（复测 12.331 s，均超阈值）；m3e-base 36.1 ms / 0.800 GB / 8.831 s（全部达标） | 报告 §7 |
 | 6 | 仓库门禁 | `check_repo_structure.py` / `check_links.py` / `check_data_safety.py` / `check_doc_sync.py` / `check_governance.py` | 全部通过（数据安全仅 2 条既有 WARN，非本次引入） | 本地执行记录 |
 
 - 同输入同结果：AIProvider mock 模式为确定性关键词匹配，同一输入重复运行结果一致。
