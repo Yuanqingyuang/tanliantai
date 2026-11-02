@@ -67,6 +67,10 @@
 | `emission-factors/factor-register.md` | 因子登记表（占位模板） |
 | `references/README.md` | 来源登记规则 |
 | `references/bibliography.md` | 书目与来源登记表 |
+| `references/r1-standard-extracts.md` | R1 正式文本摘录及 GB/T 24067 待补交接 |
+| `references/r1-standard-access.md` | R1 标准来源、现行性与购买优先级 |
+| `references/r1-data-permissions.md` | R1 数据许可与 EF ID 来源清单 |
+| `references/collected-pdfs/README.md` | 资料搜集 PDF 分类与 SHA-256 清单（整理件，非正式原文） |
 
 ## 7. 与其他文档的接口
 

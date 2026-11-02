@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 2026-11-02
+
+- 增加 R1 标准摘录和许可清单草案、T-0003/T-0009 任务留痕；GB/T 24067 与行业标准正文缺口明确标注为待确认，因子值未入库。
+- 收录 77 份项目资料搜集 PDF 至 `knowledge/references/collected-pdfs/`，保留原分类并附 SHA-256 清单；明确其为整理件，不代替发布机构正式原文。
+
 本文件记录链碳台（CHAINPCF）仓库的用户可见变更。
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 

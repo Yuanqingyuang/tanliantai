@@ -52,13 +52,13 @@ T-<四位序号>          例：T-0001、T-0002（全项目连续编号，不复
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | T-0001 | 建立 Agent 协作框架（确定性检查 + CI 门禁 + 协作/写作流程） | 工程配置 / CI | Agent（监督：赵天志） | 袁青扬（@Yuanqingyuang） | 待评审 | `.github/`、`tools/`、`.agents/`、`docs/`、`README.md`、`AGENTS.md`、`CONTRIBUTING.md`、`CHANGELOG.md` | 待填 | — | 2026-10-12 |
 | T-0002 | 技术基线 ADR 0003（应用形态/技术栈/部署/模型） | 架构决策 | 赵天志（@55msi） | 待确认 | 待评审 | `docs/decisions/`、`docs/architecture/`、`docs/planning/`、`CHANGELOG.md` | #2 | — | 2026-10-27 |
-| T-0003 | 标准与政策梳理（GB/T 24067-2024 等） | 文档/标准 | 待认领 | 待确认 | 待认领 | `knowledge/references/` | — | — | 2026-10-27 |
+| T-0003 | 标准与政策梳理（GB/T 24067-2024 等） | 文档/标准 | Agent（R1） | 待确认 | 进行中 | `knowledge/references/`、`docs/planning/tasks/T-0003/`、`CHANGELOG.md` | — | — | 2026-11-02 |
 | T-0004 | 术语、单位与公式基线 | 知识库 | 待认领 | 待确认 | 待认领 | `knowledge/domain/`、`knowledge/formulas/` | — | — | 2026-10-27 |
 | T-0005 | PCBA-SMT 工序链与设备清单 | 调研/知识库 | 待认领 | 待确认 | 待认领 | `knowledge/domain/` | — | — | 2026-10-27 |
 | T-0006 | 企业需求调研 | 调研 | 待认领 | 待确认 | 待认领 | `docs/product/`、`docs/planning/` | — | — | 2026-10-27 |
 | T-0007 | 指标体系与四组实验定义 | 测试/实验设计 | 待认领 | 待确认 | 待认领 | `tests/acceptance/` | — | — | 2026-10-27 |
 | T-0008 | 案例产品与核算边界基线 | 产品/核算 | 待认领 | 待确认 | 待认领 | `docs/product/`、`knowledge/domain/` | — | — | 2026-10-27 |
-| T-0009 | 数据许可与来源清单 | 文档/合规 | 待认领 | 待确认 | 待认领 | `knowledge/references/`、`docs/decisions/` | — | — | 2026-10-27 |
+| T-0009 | 数据许可与来源清单 | 文档/合规 | Agent（R1） | 待确认 | 进行中 | `knowledge/references/`、`docs/planning/tasks/T-0009/`、`CHANGELOG.md` | — | — | 2026-11-02 |
 | T-0010 | 技术选型验证 spike | 技术验证 | 待认领 | 待确认 | 待认领 | `docs/development/`、`environment/` | — | — | 2026-10-27 |
 | T-0011 | 数据字典 V0.1 | 数据字典 | 待认领 | 待确认 | 待认领 | `modules/data_dictionary/`、`contracts/` | — | — | 2026-10-27 |
 | T-0012 | 契约 V0.1（User/Role 必进，Rule/Evidence 待定） | 契约 | 待认领 | 待确认 | 待认领 | `contracts/` | — | — | 2026-10-27 |
