@@ -1,0 +1,70 @@
+# T-0010 技术验证：PostgreSQL 16 / 17 / 18 三版本对照
+# 仅用于本地验证；密码与数据卷均为临时值，不得用于生产。
+# 启动：docker compose -f environment/spike/docker-compose.yml up -d
+name: t0010-pg
+
+services:
+  pg16:
+    image: postgres:16
+    container_name: t0010-pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: spike_local_only
+      POSTGRES_DB: spike
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - pg16-data:/var/lib/postgresql/data
+    shm_size: 256mb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d spike"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  pg17:
+    image: postgres:17
+    container_name: t0010-pg17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: spike_local_only
+      POSTGRES_DB: spike
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "127.0.0.1:5434:5432"
+    volumes:
+      - pg17-data:/var/lib/postgresql/data
+    shm_size: 256mb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d spike"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  pg18:
+    image: postgres:18
+    container_name: t0010-pg18
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: spike_local_only
+      POSTGRES_DB: spike
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "127.0.0.1:5435:5432"
+    volumes:
+      - pg18-data:/var/lib/postgresql/data
+    shm_size: 256mb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d spike"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pg16-data:
+  pg17-data:
+  pg18-data:

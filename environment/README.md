@@ -39,6 +39,12 @@ Python 3.12 只是首期骨架取值，**【待确认】：最终版本须与选
 ```text
 environment/
 ├── README.md                     本文件：环境约定与排障
+├── version-lock.md               T-0010 版本锁定清单（数据库与工具链已实测）
+├── spike/                        技术验证用编排与脚本（非产品环境）
+│   ├── README.md
+│   ├── docker-compose.yml        PostgreSQL 16 / 17 / 18 对照
+│   └── scripts/
+│       └── db_checks.py          NUMERIC / JSONB / 并发 / 越权最小验证
 └── scripts/
     └── check_environment.py      环境自检脚本（仅标准库）
 ```
@@ -46,6 +52,8 @@ environment/
 | 文件 | 作用 | 调用方式 |
 | --- | --- | --- |
 | [scripts/check_environment.py](scripts/check_environment.py) | 检查 Python 版本、平台与编码、工作目录、关键路径、Git、疑似真实数据 | `python3 environment/scripts/check_environment.py [--quiet]` |
+| [version-lock.md](version-lock.md) | T-0010 版本清单与 PostgreSQL 锁定建议 | 阅读 |
+| [spike/README.md](spike/README.md) | 三版本 PostgreSQL 与数据库验证脚本的用法 | 阅读 |
 | [../tools/check_repo_structure.py](../tools/check_repo_structure.py) | 检查仓库必需文件与目录是否齐备 | `python3 tools/check_repo_structure.py [--quiet]` |
 
 ## 四、自检脚本的输出含义
