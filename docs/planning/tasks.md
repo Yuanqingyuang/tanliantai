@@ -60,7 +60,7 @@ T-<四位序号>          例：T-0001、T-0002（全项目连续编号，不复
 | T-0008 | 案例产品与核算边界基线 | 产品/核算 | R2 知识库维护 | 袁青扬（@Yuanqingyuang） | 已完成 | `docs/product/`、`knowledge/domain/` | 已合入 main: 214bfd5 | 待签注 | 2026-11-20 |
 | T-0009 | 数据许可与来源清单 | 文档/合规 | 待认领 | 待确认 | 待认领 | `knowledge/references/`、`docs/decisions/` | — | — | 2026-10-27 |
 | T-0010 | 技术选型验证 spike | 技术验证 | 待认领 | 待确认 | 待认领 | `docs/development/`、`environment/` | — | — | 2026-10-27 |
-| T-0011 | 数据字典 V0.1 | 数据字典 | 待认领 | 待确认 | 待认领 | `modules/data_dictionary/`、`contracts/` | — | — | 2026-10-27 |
+| T-0011 | 数据字典 V0.1 | 数据字典 | R2 知识库维护 | 袁青扬（@Yuanqingyuang） | 已完成 | `contracts/` | 已合入 main: 提交中 | 待签注 | 2026-11-20 |
 | T-0012 | 契约 V0.1（User/Role 必进，Rule/Evidence 待定） | 契约 | 待认领 | 待确认 | 待认领 | `contracts/` | — | — | 2026-10-27 |
 | T-0013 | 碳数据包规范 V0.1 | 规范 | 待认领 | 待确认 | 待认领 | `modules/data_package/`、`contracts/` | — | — | 2026-10-27 |
 | T-0014 | 系统设计（分层/模块/接口/存储） | 架构 | 待认领 | 待确认 | 待认领 | `docs/architecture/` | — | — | 2026-10-27 |
