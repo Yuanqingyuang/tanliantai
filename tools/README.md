@@ -83,3 +83,7 @@ python3 tools/check_repo_structure.py --quiet
 - 测试规则：[../.agents/policies/testing.md](../.agents/policies/testing.md)
 - 知识库入口：[../knowledge/README.md](../knowledge/README.md)
 - 契约入口：[../contracts/README.md](../contracts/README.md)
+
+## 申报文档的精确登记
+
+[document-artifacts.json](document-artifacts.json)仅登记用户授权同步的6份申报Word历史文件。安全扫描仅在完整相对路径和SHA-256同时匹配时免除其“非示例目录数据后缀”阻塞。文件内容变化即重新阻塞，密钥/凭据与强敏感文件名检查始终保留；禁止目录通配、表格数据或任意附件例外。新增或变更登记必须先核对文档内容并留痕。该清单不代表学术评审或脱敏认证。
