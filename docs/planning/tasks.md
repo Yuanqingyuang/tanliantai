@@ -56,7 +56,7 @@ T-<四位序号>          例：T-0001、T-0002（全项目连续编号，不复
 | T-0004 | 术语、单位与公式基线 | 知识库 | R2 知识库维护 | 袁青扬（@Yuanqingyuang） | 已完成 | `knowledge/domain/`、`knowledge/formulas/` | 已合入 main: 53348fe | 待签注 | 2026-11-20 |
 | T-0005 | PCBA-SMT 工序链与设备清单 | 知识库 | R2 知识库维护 | 袁青扬（@Yuanqingyuang） | 已完成 | `knowledge/domain/` | 已合入 main: f8eeb6f | 待签注 | 2026-11-20 |
 | T-0006 | 企业需求调研 | 调研 | 待认领 | 待确认 | 待认领 | `docs/product/`、`docs/planning/` | — | — | 2026-10-27 |
-| T-0007 | 指标体系与四组实验定义 | 测试/实验设计 | R2 知识库维护 | 袁青扬（@Yuanqingyuang） | 进行中 | `tests/acceptance/` | 待填 | 待签注 | 2026-11-20 |
+| T-0007 | 指标体系与四组实验定义 | 测试/实验设计 | R2 知识库维护 | 袁青扬（@Yuanqingyuang） | 已完成 | `tests/acceptance/` | 已合入 main: af03f85 / tag: acceptance-v1.0 | 待签注 | 2026-11-20 |
 | T-0008 | 案例产品与核算边界基线 | 产品/核算 | 待认领 | 待确认 | 待认领 | `docs/product/`、`knowledge/domain/` | — | — | 2026-10-27 |
 | T-0009 | 数据许可与来源清单 | 文档/合规 | 待认领 | 待确认 | 待认领 | `knowledge/references/`、`docs/decisions/` | — | — | 2026-10-27 |
 | T-0010 | 技术选型验证 spike | 技术验证 | 待认领 | 待确认 | 待认领 | `docs/development/`、`environment/` | — | — | 2026-10-27 |
