@@ -53,7 +53,7 @@ T-<四位序号>          例：T-0001、T-0002（全项目连续编号，不复
 | T-0001 | 建立 Agent 协作框架（确定性检查 + CI 门禁 + 协作/写作流程） | 工程配置 / CI | Agent（监督：赵天志） | 袁青扬（@Yuanqingyuang） | 待评审 | `.github/`、`tools/`、`.agents/`、`docs/`、`README.md`、`AGENTS.md`、`CONTRIBUTING.md`、`CHANGELOG.md` | 待填 | — | 2026-10-12 |
 | T-0002 | 技术基线 ADR 0003（应用形态/技术栈/部署/模型） | 架构决策 | 赵天志（@55msi） | 待确认 | 待评审 | `docs/decisions/`、`docs/architecture/`、`docs/planning/`、`CHANGELOG.md` | #2 | — | 2026-10-27 |
 | T-0003 | 标准与政策梳理（GB/T 24067-2024 等） | 文档/标准 | 待认领 | 待确认 | 待认领 | `knowledge/references/` | — | — | 2026-10-27 |
-| T-0004 | 术语、单位与公式基线 | 知识库 | R2 知识库维护 | 袁青扬（@Yuanqingyuang） | 已完成 | `knowledge/domain/`、`knowledge/formulas/` | 待填 | 待签注 | 2026-11-20 |
+| T-0004 | 术语、单位与公式基线 | 知识库 | R2 知识库维护 | 袁青扬（@Yuanqingyuang） | 已完成 | `knowledge/domain/`、`knowledge/formulas/` | 已合入 main: 53348fe | 待签注 | 2026-11-20 |
 | T-0005 | PCBA-SMT 工序链与设备清单 | 调研/知识库 | 待认领 | 待确认 | 待认领 | `knowledge/domain/` | — | — | 2026-10-27 |
 | T-0006 | 企业需求调研 | 调研 | 待认领 | 待确认 | 待认领 | `docs/product/`、`docs/planning/` | — | — | 2026-10-27 |
 | T-0007 | 指标体系与四组实验定义 | 测试/实验设计 | 待认领 | 待确认 | 待认领 | `tests/acceptance/` | — | — | 2026-10-27 |
@@ -96,4 +96,8 @@ T-<四位序号>          例：T-0001、T-0002（全项目连续编号，不复
   - `delivery-report.md`：按 [.agents/templates/delivery-report.md](../../.agents/templates/delivery-report.md) 填写。
 - 状态进入「待评审」后，这两份文件必须已存在——`check_governance.py` 会校验（见 [tools/README.md](../../tools/README.md)）。
 - 台账行的「关联 PR」在 PR 开出后回填；「确认」由确认人在签注时填写（缺一不算完成，见 [review.md §7](../../.agents/workflows/review.md)）。
+
+
+
+
 
