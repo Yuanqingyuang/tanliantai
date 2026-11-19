@@ -54,7 +54,7 @@ T-<四位序号>          例：T-0001、T-0002（全项目连续编号，不复
 | T-0002 | 技术基线 ADR 0003（应用形态/技术栈/部署/模型） | 架构决策 | 赵天志（@55msi） | 待确认 | 待评审 | `docs/decisions/`、`docs/architecture/`、`docs/planning/`、`CHANGELOG.md` | #2 | — | 2026-10-27 |
 | T-0003 | 标准与政策梳理（GB/T 24067-2024 等） | 文档/标准 | 待认领 | 待确认 | 待认领 | `knowledge/references/` | — | — | 2026-10-27 |
 | T-0004 | 术语、单位与公式基线 | 知识库 | R2 知识库维护 | 袁青扬（@Yuanqingyuang） | 已完成 | `knowledge/domain/`、`knowledge/formulas/` | 已合入 main: 53348fe | 待签注 | 2026-11-20 |
-| T-0005 | PCBA-SMT 工序链与设备清单 | 调研/知识库 | 待认领 | 待确认 | 待认领 | `knowledge/domain/` | — | — | 2026-10-27 |
+| T-0005 | PCBA-SMT 工序链与设备清单 | 知识库 | R2 知识库维护 | 袁青扬（@Yuanqingyuang） | 已完成 | `knowledge/domain/` | 已合入 main: f8eeb6f | 待签注 | 2026-11-20 |
 | T-0006 | 企业需求调研 | 调研 | 待认领 | 待确认 | 待认领 | `docs/product/`、`docs/planning/` | — | — | 2026-10-27 |
 | T-0007 | 指标体系与四组实验定义 | 测试/实验设计 | 待认领 | 待确认 | 待认领 | `tests/acceptance/` | — | — | 2026-10-27 |
 | T-0008 | 案例产品与核算边界基线 | 产品/核算 | 待认领 | 待确认 | 待认领 | `docs/product/`、`knowledge/domain/` | — | — | 2026-10-27 |
