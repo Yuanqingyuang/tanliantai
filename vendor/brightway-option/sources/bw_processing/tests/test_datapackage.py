@@ -1,0 +1,1047 @@
+import shutil
+import zipfile
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import pytest
+from fsspec.implementations.zip import ZipFileSystem
+from morefs.dict import DictFS
+
+from bw_processing import create_datapackage, load_datapackage, simple_graph, MatrixSerializeFormat
+from bw_processing.constants import INDICES_DTYPE, UNCERTAINTY_DTYPE, MAX_SIGNED_64BIT_INT, MAX_SIGNED_32BIT_INT
+from bw_processing.errors import NonUnique, PotentialInconsistency, ShapeMismatch, WrongDatatype
+from bw_processing.io_helpers import generic_directory_filesystem, generic_zipfile_filesystem
+
+dirpath = Path(__file__).parent.resolve() / "fixtures"
+
+
+class Dummy:
+    pass
+
+
+def add_data(dp):
+    data_array = np.array([2, 7, 12])
+    indices_array = np.array([(1, 4), (2, 5), (3, 6)], dtype=INDICES_DTYPE)
+    flip_array = np.array([1, 0, 0], dtype=bool)
+    dp.add_persistent_vector(
+        matrix="sa_matrix",
+        data_array=data_array,
+        name="sa-data-vector",
+        indices_array=indices_array,
+        nrows=2,
+        flip_array=flip_array,
+    )
+
+    json_data = [{"a": "b"}, 1, True]
+    df = pd.DataFrame(
+        [
+            {"id": 1, "a": 1, "c": 3, "d": 11},
+            {"id": 2, "a": 2, "c": 4, "d": 11},
+            {"id": 3, "a": 1, "c": 4, "d": 11},
+        ]
+    ).set_index(["id"])
+
+    dp.add_persistent_array(
+        matrix="sa_matrix",
+        data_array=np.arange(12).reshape((3, 4)),
+        indices_array=indices_array,
+        name="sa-data-array",
+        flip_array=flip_array,
+    )
+
+    dp.add_dynamic_vector(
+        interface=Dummy(),
+        indices_array=indices_array,
+        matrix="sa_matrix",
+        name="sa-vector-interface",
+    )
+
+    dp.add_dynamic_array(
+        interface=Dummy(),
+        matrix="sa_matrix",
+        name="sa-array-interface",
+        indices_array=indices_array,
+    )
+    dp.add_csv_metadata(
+        dataframe=df,
+        valid_for=[("sa-data-vector", "rows")],
+        name="sa-data-vector-csv-metadata",
+    )
+    dp.add_json_metadata(
+        data=json_data, valid_for="sa-data-array", name="sa-data-array-json-metadata"
+    )
+
+
+def copy_fixture(fixture_name, dest):
+    source = Path(__file__).parent.resolve() / "fixtures" / fixture_name
+    for fp in source.iterdir():
+        shutil.copy(fp, dest / fp.name)
+
+
+def test_group_ordering_consistent():
+    dp = load_datapackage(ZipFileSystem(dirpath / "test-fixture.zip"))
+    assert list(dp.groups) == [
+        "sa-data-vector-from-dict",
+        "sa-data-vector",
+        "sa-data-array",
+        "sa-vector-interface",
+        "sa-array-interface",
+    ]
+
+
+def test_get_max_index_value():
+    dp = load_datapackage(ZipFileSystem(dirpath / "test-fixture.zip"))
+    assert dp.metadata.get("64_bit_indices")
+    assert dp.get_max_index_value() == MAX_SIGNED_64BIT_INT
+
+    dp = load_datapackage(ZipFileSystem(dirpath / "test-fixture-32bit.zip"))
+    assert not dp.metadata.get("64_bit_indices")
+    assert dp.get_max_index_value() == MAX_SIGNED_32BIT_INT
+
+
+def test_add_resource_with_same_name():
+    dp = create_datapackage()
+    add_data(dp)
+
+    data_array = np.array([2, 7, 12])
+    indices_array = np.array([(1, 4), (2, 5), (3, 6)], dtype=INDICES_DTYPE)
+    with pytest.raises(NonUnique):
+        dp.add_persistent_vector(
+            matrix="sa_matrix",
+            data_array=data_array,
+            name="sa-data-vector",
+            indices_array=indices_array,
+        )
+
+
+def test_save_modifications(tmp_path):
+    copy_fixture("tfd", tmp_path)
+    dp = load_datapackage(generic_directory_filesystem(dirpath=tmp_path))
+
+    assert dp.resources[1]["name"] == "sa-data-vector-from-dict.data"
+    assert np.allclose(dp.data[1], [3.3, 8.3])
+
+    dp.data[1][:] = 42
+    dp._modified = [1]
+    dp.write_modified()
+
+    assert np.allclose(dp.data[1], 42)
+    assert not dp._modified
+
+    dp = load_datapackage(generic_directory_filesystem(dirpath=tmp_path))
+    assert np.allclose(dp.data[1], 42)
+
+
+def test_del_resource_filesystem(tmp_path):
+    copy_fixture("tfd", tmp_path)
+    dp = load_datapackage(generic_directory_filesystem(dirpath=tmp_path))
+    reference_length = len(dp)
+    assert "sa-vector-interface.indices.npy" in [o.name for o in tmp_path.iterdir()]
+    dp.del_resource("sa-vector-interface.indices")
+    assert "sa-vector-interface.indices.npy" not in [o.name for o in tmp_path.iterdir()]
+    assert len(dp) == reference_length - 1
+    assert len(dp.data) == reference_length - 1
+    assert len(dp.metadata["resources"]) == reference_length - 1
+    assert len(dp.resources) == reference_length - 1
+
+
+def test_del_resource_in_memory():
+    dp = create_datapackage()
+    add_data(dp)
+    assert isinstance(dp.fs, DictFS)
+
+    reference_length = len(dp)
+    assert "sa-vector-interface.indices" in [o["name"] for o in dp.resources]
+    dp.del_resource("sa-vector-interface.indices")
+    assert "sa-vector-interface.indices" not in [o["name"] for o in dp.resources]
+    assert len(dp) == reference_length - 1
+    assert len(dp.data) == reference_length - 1
+    assert len(dp.metadata["resources"]) == reference_length - 1
+    assert len(dp.resources) == reference_length - 1
+
+
+def test_del_resource_error_modifications(tmp_path):
+    copy_fixture("tfd", tmp_path)
+    dp = load_datapackage(generic_directory_filesystem(dirpath=tmp_path))
+    dp._modified = [1]
+    with pytest.raises(PotentialInconsistency):
+        dp.del_resource(1)
+
+
+def test_del_resource_group_filesystem(tmp_path):
+    copy_fixture("tfd", tmp_path)
+    dp = load_datapackage(generic_directory_filesystem(dirpath=tmp_path))
+
+    reference_length = len(dp)
+    assert "sa-data-vector.indices.npy" in [o.name for o in tmp_path.iterdir()]
+    dp.del_resource_group("sa-data-vector")
+    assert "sa-data-vector.indices.npy" not in [o.name for o in tmp_path.iterdir()]
+    assert len(dp) == reference_length - 3
+    assert len(dp.data) == reference_length - 3
+    assert len(dp.metadata["resources"]) == reference_length - 3
+    assert len(dp.resources) == reference_length - 3
+
+
+def test_del_resource_group_in_memory():
+    dp = create_datapackage()
+    add_data(dp)
+    assert isinstance(dp.fs, DictFS)
+
+    reference_length = len(dp)
+    assert "sa-data-vector.indices" in [o["name"] for o in dp.resources]
+    dp.del_resource_group("sa-data-vector")
+    assert "sa-data-vector.indices" not in [o["name"] for o in dp.resources]
+    assert len(dp) == reference_length - 3
+    assert len(dp.data) == reference_length - 3
+    assert len(dp.metadata["resources"]) == reference_length - 3
+    assert len(dp.resources) == reference_length - 3
+
+
+def test_del_resource_group_error_modifications(tmp_path):
+    copy_fixture("tfd", tmp_path)
+    dp = load_datapackage(generic_directory_filesystem(dirpath=tmp_path))
+    dp._modified = [1]
+    with pytest.raises(PotentialInconsistency):
+        dp.del_resource_group("sa-vector-interface")
+
+
+def test_exclude_basic():
+    dp = create_datapackage()
+    add_data(dp)
+    assert isinstance(dp.fs, DictFS)
+
+    reference_length = len(dp)
+    assert "sa-data-vector.indices" in [o["name"] for o in dp.resources]
+    ndp = dp.exclude({"group": "sa-data-vector"})
+    assert ndp is not dp
+    assert "sa-data-vector.indices" in [o["name"] for o in dp.resources]
+    assert "sa-data-vector.indices" not in [o["name"] for o in ndp.resources]
+    assert len(ndp) == reference_length - 3
+    assert len(ndp.data) == reference_length - 3
+    assert len(ndp.metadata["resources"]) == reference_length - 3
+    assert len(ndp.resources) == reference_length - 3
+
+
+def test_exclude_no_match():
+    dp = create_datapackage()
+    add_data(dp)
+    assert isinstance(dp.fs, DictFS)
+
+    reference_length = len(dp)
+    assert "sa-data-vector.indices" in [o["name"] for o in dp.resources]
+    ndp = dp.exclude({"foo": "bar"})
+    assert ndp is not dp
+    assert "sa-data-vector.indices" in [o["name"] for o in dp.resources]
+    assert "sa-data-vector.indices" in [o["name"] for o in ndp.resources]
+    assert len(ndp) == reference_length
+
+
+def test_exclude_multiple_filters():
+    dp = create_datapackage()
+    add_data(dp)
+    assert isinstance(dp.fs, DictFS)
+
+    reference_length = len(dp)
+    assert "sa-array-interface.indices" in [o["name"] for o in dp.resources]
+    ndp = dp.exclude({"group": "sa-array-interface", "matrix": "sa_matrix"})
+    assert ndp is not dp
+    assert "sa-array-interface.indices" in [o["name"] for o in dp.resources]
+    assert "sa-array-interface.indices" not in [o["name"] for o in ndp.resources]
+    assert len(ndp) == reference_length - 2
+    assert len(ndp.data) == reference_length - 2
+    assert len(ndp.metadata["resources"]) == reference_length - 2
+    assert len(ndp.resources) == reference_length - 2
+
+
+def test_exclude_multiple_matrix():
+    dp = create_datapackage()
+    add_data(dp)
+    assert isinstance(dp.fs, DictFS)
+
+    assert "sa-data-vector.indices" in [o["name"] for o in dp.resources]
+    ndp = dp.exclude({"matrix": "sa_matrix"})
+    assert ndp is not dp
+    assert "sa-data-vector.indices" in [o["name"] for o in dp.resources]
+    assert "sa-data-vector.indices" not in [o["name"] for o in ndp.resources]
+    assert len(ndp) == 2
+    assert len(ndp.data) == 2
+    assert len(ndp.metadata["resources"]) == 2
+    assert len(ndp.resources) == 2
+
+
+def test_add_persistent_vector_data_shapemismatch_ndimensions():
+    dp = create_datapackage()
+    data_array = np.array([[2, 7, 12], [4, 5, 15]])
+    indices_array = np.array([(1, 4), (2, 5), (3, 6)], dtype=INDICES_DTYPE)
+    with pytest.raises(ShapeMismatch):
+        dp.add_persistent_vector(
+            matrix="sa_matrix",
+            data_array=data_array,
+            name="sa-data-vector",
+            indices_array=indices_array,
+        )
+
+
+def test_add_persistent_vector_data_shapemismatch_nrows():
+    dp = create_datapackage()
+    data_array = np.array([2, 7, 12, 15])
+    indices_array = np.array([(1, 4), (2, 5), (3, 6)], dtype=INDICES_DTYPE)
+    with pytest.raises(ShapeMismatch):
+        dp.add_persistent_vector(
+            matrix="sa_matrix",
+            data_array=data_array,
+            name="sa-data-vector",
+            indices_array=indices_array,
+        )
+
+
+def test_add_persistent_vector_distributions_shapemismatch():
+    dp = create_datapackage()
+    distributions_array = np.array(
+        [
+            (3, 1.3, 2.5, np.nan, np.nan, np.nan, False),
+            (0, 1.3, 2.5, np.nan, np.nan, np.nan, False),
+        ],
+        dtype=UNCERTAINTY_DTYPE,
+    )
+    indices_array = np.array([(1, 4), (2, 5), (3, 6)], dtype=INDICES_DTYPE)
+    with pytest.raises(ShapeMismatch):
+        dp.add_persistent_vector(
+            matrix="sa_matrix",
+            distributions_array=distributions_array,
+            name="sa-data-vector",
+            indices_array=indices_array,
+        )
+
+
+def test_add_persistent_vector_flip_dtype():
+    dp = create_datapackage()
+    data_array = np.array([2, 7, 12])
+    flip_array = np.array([0, 1, 0])
+    indices_array = np.array([(1, 4), (2, 5), (3, 6)], dtype=INDICES_DTYPE)
+    with pytest.raises(WrongDatatype):
+        dp.add_persistent_vector(
+            matrix="sa_matrix",
+            data_array=data_array,
+            name="sa-data-vector",
+            flip_array=flip_array,
+            indices_array=indices_array,
+        )
+
+
+def test_add_persistent_vector_flip_dtype_all_zeros():
+    # A non-bool flip that is all-zeros must still raise WrongDatatype;
+    # previously the dtype check was skipped when sum() == 0.
+    dp = create_datapackage()
+    data_array = np.array([2, 7, 12])
+    flip_array = np.array([0, 0, 0])  # all falsy, but wrong dtype
+    indices_array = np.array([(1, 4), (2, 5), (3, 6)], dtype=INDICES_DTYPE)
+    with pytest.raises(WrongDatatype):
+        dp.add_persistent_vector(
+            matrix="sa_matrix",
+            data_array=data_array,
+            name="sa-data-vector",
+            flip_array=flip_array,
+            indices_array=indices_array,
+        )
+
+
+def test_add_persistent_vector_flip_shapemistmatch():
+    dp = create_datapackage()
+    data_array = np.array([2, 7, 12])
+    flip_array = np.array([0, 1, 0, 1], dtype=bool)
+    indices_array = np.array([(1, 4), (2, 5), (3, 6)], dtype=ShapeMismatch)
+    with pytest.raises(ShapeMismatch):
+        dp.add_persistent_vector(
+            matrix="sa_matrix",
+            data_array=data_array,
+            name="sa-data-vector",
+            flip_array=flip_array,
+            indices_array=indices_array,
+        )
+
+
+def test_add_persistent_array_data_shapemismatch_ndimensions():
+    dp = create_datapackage()
+    data_array = np.array([2, 7, 12])
+    indices_array = np.array([(1, 4), (2, 5), (3, 6)], dtype=INDICES_DTYPE)
+    with pytest.raises(ShapeMismatch):
+        dp.add_persistent_array(
+            matrix="sa_matrix",
+            data_array=data_array,
+            name="sa-data-vector",
+            indices_array=indices_array,
+        )
+
+
+def test_add_persistent_array_data_shapemismatch_nrows():
+    dp = create_datapackage()
+    data_array = np.arange(12).reshape(4, 3)
+    indices_array = np.array([(1, 4), (2, 5), (3, 6)], dtype=INDICES_DTYPE)
+    with pytest.raises(ShapeMismatch):
+        dp.add_persistent_array(
+            matrix="sa_matrix",
+            data_array=data_array,
+            name="sa-data-vector",
+            indices_array=indices_array,
+        )
+
+
+def test_add_persistent_array_flip_dtype():
+    dp = create_datapackage()
+    data_array = np.arange(12).reshape(3, 4)
+    flip_array = np.array([0, 1, 0])
+    indices_array = np.array([(1, 4), (2, 5), (3, 6)], dtype=INDICES_DTYPE)
+    with pytest.raises(WrongDatatype):
+        dp.add_persistent_array(
+            matrix="sa_matrix",
+            data_array=data_array,
+            name="sa-data-vector",
+            flip_array=flip_array,
+            indices_array=indices_array,
+        )
+
+
+def test_add_persistent_array_flip_dtype_all_zeros():
+    dp = create_datapackage()
+    data_array = np.arange(12).reshape(3, 4)
+    flip_array = np.array([0, 0, 0])  # all falsy, but wrong dtype
+    indices_array = np.array([(1, 4), (2, 5), (3, 6)], dtype=INDICES_DTYPE)
+    with pytest.raises(WrongDatatype):
+        dp.add_persistent_array(
+            matrix="sa_matrix",
+            data_array=data_array,
+            name="sa-data-vector",
+            flip_array=flip_array,
+            indices_array=indices_array,
+        )
+
+
+def test_add_persistent_array_flip_shapemistmatch():
+    dp = create_datapackage()
+    data_array = np.arange(12).reshape(3, 4)
+    flip_array = np.array([0, 1, 0, 1], dtype=bool)
+    indices_array = np.array([(1, 4), (2, 5), (3, 6)], dtype=ShapeMismatch)
+    with pytest.raises(ShapeMismatch):
+        dp.add_persistent_array(
+            matrix="sa_matrix",
+            data_array=data_array,
+            name="sa-data-vector",
+            flip_array=flip_array,
+            indices_array=indices_array,
+        )
+
+
+def test_add_dynamic_array_flip_dtype():
+    dp = create_datapackage()
+    flip_array = np.array([0, 1, 0])
+    indices_array = np.array([(1, 4), (2, 5), (3, 6)], dtype=INDICES_DTYPE)
+    with pytest.raises(WrongDatatype):
+        dp.add_dynamic_array(
+            matrix="sa_matrix",
+            interface=Dummy(),
+            name="sa-data-vector",
+            flip_array=flip_array,
+            indices_array=indices_array,
+        )
+
+
+def test_add_dynamic_array_flip_dtype_all_zeros():
+    dp = create_datapackage()
+    flip_array = np.array([0, 0, 0])  # all falsy, but wrong dtype
+    indices_array = np.array([(1, 4), (2, 5), (3, 6)], dtype=INDICES_DTYPE)
+    with pytest.raises(WrongDatatype):
+        dp.add_dynamic_array(
+            matrix="sa_matrix",
+            interface=Dummy(),
+            name="sa-data-vector",
+            flip_array=flip_array,
+            indices_array=indices_array,
+        )
+
+
+def test_add_dynamic_array_flip_shapemistmatch():
+    dp = create_datapackage()
+    flip_array = np.array([0, 1, 0, 1], dtype=bool)
+    indices_array = np.array([(1, 4), (2, 5), (3, 6)], dtype=ShapeMismatch)
+    with pytest.raises(ShapeMismatch):
+        dp.add_dynamic_array(
+            matrix="sa_matrix",
+            interface=Dummy(),
+            name="sa-data-vector",
+            flip_array=flip_array,
+            indices_array=indices_array,
+        )
+
+
+def test_add_dynamic_vector_flip_dtype():
+    dp = create_datapackage()
+    flip_array = np.array([0, 1, 0])
+    indices_array = np.array([(1, 4), (2, 5), (3, 6)], dtype=INDICES_DTYPE)
+    with pytest.raises(WrongDatatype):
+        dp.add_dynamic_vector(
+            matrix="sa_matrix",
+            interface=Dummy(),
+            name="sa-data-vector",
+            flip_array=flip_array,
+            indices_array=indices_array,
+        )
+
+
+def test_add_dynamic_vector_flip_dtype_all_zeros():
+    dp = create_datapackage()
+    flip_array = np.array([0, 0, 0])  # all falsy, but wrong dtype
+    indices_array = np.array([(1, 4), (2, 5), (3, 6)], dtype=INDICES_DTYPE)
+    with pytest.raises(WrongDatatype):
+        dp.add_dynamic_vector(
+            matrix="sa_matrix",
+            interface=Dummy(),
+            name="sa-data-vector",
+            flip_array=flip_array,
+            indices_array=indices_array,
+        )
+
+
+def test_add_dynamic_vector_flip_shapemistmatch():
+    dp = create_datapackage()
+    flip_array = np.array([0, 1, 0, 1], dtype=bool)
+    indices_array = np.array([(1, 4), (2, 5), (3, 6)], dtype=ShapeMismatch)
+    with pytest.raises(ShapeMismatch):
+        dp.add_dynamic_vector(
+            matrix="sa_matrix",
+            interface=Dummy(),
+            name="sa-data-vector",
+            flip_array=flip_array,
+            indices_array=indices_array,
+        )
+
+
+def test_add_persistent_vector_rescale_array():
+    dp = create_datapackage()
+    data_array = np.array([2.0, 7.0, 12.0])
+    rescale_array = np.array([0.5, 1.0, 2.0])
+    indices_array = np.array([(1, 4), (2, 5), (3, 6)], dtype=INDICES_DTYPE)
+    dp.add_persistent_vector(
+        matrix="sa_matrix",
+        data_array=data_array,
+        name="sa-data-vector",
+        indices_array=indices_array,
+        rescale_array=rescale_array,
+    )
+    assert "sa-data-vector.rescale" in [o["name"] for o in dp.resources]
+    data, meta = dp.get_resource("sa-data-vector.rescale")
+    assert meta["kind"] == "rescale"
+    assert np.allclose(data, rescale_array)
+
+
+def test_add_persistent_vector_scale_dtype():
+    dp = create_datapackage()
+    data_array = np.array([2.0, 7.0, 12.0])
+    rescale_array = np.array([1, 2, 3])  # integer dtype
+    indices_array = np.array([(1, 4), (2, 5), (3, 6)], dtype=INDICES_DTYPE)
+    with pytest.raises(WrongDatatype):
+        dp.add_persistent_vector(
+            matrix="sa_matrix",
+            data_array=data_array,
+            name="sa-data-vector",
+            indices_array=indices_array,
+            rescale_array=rescale_array,
+        )
+
+
+def test_add_persistent_vector_scale_shapemismatch():
+    dp = create_datapackage()
+    data_array = np.array([2.0, 7.0, 12.0])
+    rescale_array = np.array([0.5, 1.0, 2.0, 3.0])
+    indices_array = np.array([(1, 4), (2, 5), (3, 6)], dtype=INDICES_DTYPE)
+    with pytest.raises(ShapeMismatch):
+        dp.add_persistent_vector(
+            matrix="sa_matrix",
+            data_array=data_array,
+            name="sa-data-vector",
+            indices_array=indices_array,
+            rescale_array=rescale_array,
+        )
+
+
+def test_add_persistent_array_rescale_array():
+    dp = create_datapackage()
+    data_array = np.arange(12, dtype=float).reshape(3, 4)
+    rescale_array = np.array([0.5, 1.0, 2.0])
+    indices_array = np.array([(1, 4), (2, 5), (3, 6)], dtype=INDICES_DTYPE)
+    dp.add_persistent_array(
+        matrix="sa_matrix",
+        data_array=data_array,
+        name="sa-data-vector",
+        indices_array=indices_array,
+        rescale_array=rescale_array,
+    )
+    assert "sa-data-vector.rescale" in [o["name"] for o in dp.resources]
+    data, meta = dp.get_resource("sa-data-vector.rescale")
+    assert meta["kind"] == "rescale"
+    assert np.allclose(data, rescale_array)
+
+
+def test_add_persistent_array_scale_dtype():
+    dp = create_datapackage()
+    data_array = np.arange(12, dtype=float).reshape(3, 4)
+    rescale_array = np.array([1, 2, 3])
+    indices_array = np.array([(1, 4), (2, 5), (3, 6)], dtype=INDICES_DTYPE)
+    with pytest.raises(WrongDatatype):
+        dp.add_persistent_array(
+            matrix="sa_matrix",
+            data_array=data_array,
+            name="sa-data-vector",
+            indices_array=indices_array,
+            rescale_array=rescale_array,
+        )
+
+
+def test_add_persistent_array_scale_shapemismatch():
+    dp = create_datapackage()
+    data_array = np.arange(12, dtype=float).reshape(3, 4)
+    rescale_array = np.array([0.5, 1.0, 2.0, 3.0])
+    indices_array = np.array([(1, 4), (2, 5), (3, 6)], dtype=INDICES_DTYPE)
+    with pytest.raises(ShapeMismatch):
+        dp.add_persistent_array(
+            matrix="sa_matrix",
+            data_array=data_array,
+            name="sa-data-vector",
+            indices_array=indices_array,
+            rescale_array=rescale_array,
+        )
+
+
+def test_add_dynamic_vector_rescale_array():
+    dp = create_datapackage()
+    rescale_array = np.array([0.5, 1.0, 2.0])
+    indices_array = np.array([(1, 4), (2, 5), (3, 6)], dtype=INDICES_DTYPE)
+    dp.add_dynamic_vector(
+        matrix="sa_matrix",
+        interface=Dummy(),
+        name="sa-data-vector",
+        indices_array=indices_array,
+        rescale_array=rescale_array,
+    )
+    assert "sa-data-vector.rescale" in [o["name"] for o in dp.resources]
+    data, meta = dp.get_resource("sa-data-vector.rescale")
+    assert meta["kind"] == "rescale"
+    assert np.allclose(data, rescale_array)
+
+
+def test_add_dynamic_vector_scale_dtype():
+    dp = create_datapackage()
+    rescale_array = np.array([1, 2, 3])
+    indices_array = np.array([(1, 4), (2, 5), (3, 6)], dtype=INDICES_DTYPE)
+    with pytest.raises(WrongDatatype):
+        dp.add_dynamic_vector(
+            matrix="sa_matrix",
+            interface=Dummy(),
+            name="sa-data-vector",
+            indices_array=indices_array,
+            rescale_array=rescale_array,
+        )
+
+
+def test_add_dynamic_vector_scale_shapemismatch():
+    dp = create_datapackage()
+    rescale_array = np.array([0.5, 1.0, 2.0, 3.0])
+    indices_array = np.array([(1, 4), (2, 5), (3, 6)], dtype=INDICES_DTYPE)
+    with pytest.raises(ShapeMismatch):
+        dp.add_dynamic_vector(
+            matrix="sa_matrix",
+            interface=Dummy(),
+            name="sa-data-vector",
+            indices_array=indices_array,
+            rescale_array=rescale_array,
+        )
+
+
+def test_add_dynamic_array_rescale_array():
+    dp = create_datapackage()
+    rescale_array = np.array([0.5, 1.0, 2.0])
+    indices_array = np.array([(1, 4), (2, 5), (3, 6)], dtype=INDICES_DTYPE)
+    dp.add_dynamic_array(
+        matrix="sa_matrix",
+        interface=Dummy(),
+        name="sa-data-vector",
+        indices_array=indices_array,
+        rescale_array=rescale_array,
+    )
+    assert "sa-data-vector.rescale" in [o["name"] for o in dp.resources]
+    data, meta = dp.get_resource("sa-data-vector.rescale")
+    assert meta["kind"] == "rescale"
+    assert np.allclose(data, rescale_array)
+
+
+def test_add_dynamic_array_scale_dtype():
+    dp = create_datapackage()
+    rescale_array = np.array([1, 2, 3])
+    indices_array = np.array([(1, 4), (2, 5), (3, 6)], dtype=INDICES_DTYPE)
+    with pytest.raises(WrongDatatype):
+        dp.add_dynamic_array(
+            matrix="sa_matrix",
+            interface=Dummy(),
+            name="sa-data-vector",
+            indices_array=indices_array,
+            rescale_array=rescale_array,
+        )
+
+
+def test_add_dynamic_array_scale_shapemismatch():
+    dp = create_datapackage()
+    rescale_array = np.array([0.5, 1.0, 2.0, 3.0])
+    indices_array = np.array([(1, 4), (2, 5), (3, 6)], dtype=INDICES_DTYPE)
+    with pytest.raises(ShapeMismatch):
+        dp.add_dynamic_array(
+            matrix="sa_matrix",
+            interface=Dummy(),
+            name="sa-data-vector",
+            indices_array=indices_array,
+            rescale_array=rescale_array,
+        )
+
+
+def _add_vector_with_distributions(dp, name, data_array, indices_array, distributions_array):
+    """Add a resource group including a distributions array, bypassing
+    add_persistent_vector's early-exit filter.  Used to set up test state
+    that _prune_trivial_distributions is meant to clean up."""
+    kwargs = {"matrix": "m", "category": "vector", "nrows": len(indices_array)}
+    dp._add_numpy_array_resource(
+        array=indices_array, name=name + ".indices", group=name, kind="indices",
+        meta_object="vector", meta_type="indices", **kwargs,
+    )
+    dp._add_numpy_array_resource(
+        array=data_array, name=name + ".data", group=name, kind="data",
+        meta_object="vector", meta_type="generic", **kwargs,
+    )
+    dp._add_numpy_array_resource(
+        array=distributions_array, name=name + ".distributions", group=name, kind="distributions",
+        meta_object="vector", meta_type="distributions", **kwargs,
+    )
+
+
+def test_finalize_removes_trivial_distributions_type0(tmp_path):
+    """uncertainty_type=0 with loc==amount → distributions resource must be pruned."""
+    data_array = np.array([1.0, 2.0, 3.0], dtype=np.float32)
+    indices_array = np.array([(1, 4), (2, 5), (3, 6)], dtype=INDICES_DTYPE)
+    distributions_array = np.array(
+        [(0, 1.0, np.nan, np.nan, np.nan, np.nan, False),
+         (0, 2.0, np.nan, np.nan, np.nan, np.nan, False),
+         (0, 3.0, np.nan, np.nan, np.nan, np.nan, False)],
+        dtype=UNCERTAINTY_DTYPE,
+    )
+
+    dp = create_datapackage(fs=generic_directory_filesystem(dirpath=tmp_path), name="test")
+    _add_vector_with_distributions(dp, "r", data_array, indices_array, distributions_array)
+    dp.finalize_serialization()
+
+    dp2 = load_datapackage(generic_directory_filesystem(dirpath=tmp_path))
+    assert "distributions" not in {r["kind"] for r in dp2.resources}
+
+
+def test_finalize_removes_trivial_distributions_type1(tmp_path):
+    """uncertainty_type=1 with loc==amount is also trivial and must be pruned."""
+    data_array = np.array([5.0, 6.0], dtype=np.float32)
+    indices_array = np.array([(1, 4), (2, 5)], dtype=INDICES_DTYPE)
+    distributions_array = np.array(
+        [(1, 5.0, np.nan, np.nan, np.nan, np.nan, False),
+         (1, 6.0, np.nan, np.nan, np.nan, np.nan, False)],
+        dtype=UNCERTAINTY_DTYPE,
+    )
+
+    dp = create_datapackage(fs=generic_directory_filesystem(dirpath=tmp_path), name="test")
+    _add_vector_with_distributions(dp, "r", data_array, indices_array, distributions_array)
+    dp.finalize_serialization()
+
+    dp2 = load_datapackage(generic_directory_filesystem(dirpath=tmp_path))
+    assert "distributions" not in {r["kind"] for r in dp2.resources}
+
+
+def test_finalize_removes_trivial_distributions_file_deleted(tmp_path):
+    """The .distributions.npy file must be physically removed from disk."""
+    data_array = np.array([1.0, 2.0], dtype=np.float32)
+    indices_array = np.array([(1, 4), (2, 5)], dtype=INDICES_DTYPE)
+    distributions_array = np.array(
+        [(0, 1.0, np.nan, np.nan, np.nan, np.nan, False),
+         (0, 2.0, np.nan, np.nan, np.nan, np.nan, False)],
+        dtype=UNCERTAINTY_DTYPE,
+    )
+
+    dp = create_datapackage(fs=generic_directory_filesystem(dirpath=tmp_path), name="test")
+    _add_vector_with_distributions(dp, "r", data_array, indices_array, distributions_array)
+    dist_path = tmp_path / "r.distributions.npy"
+    assert dist_path.exists()
+    dp.finalize_serialization()
+    assert not dist_path.exists()
+
+
+def test_finalize_keeps_distributions_real_uncertainty(tmp_path):
+    """uncertainty_type>=2 must be retained even if loc==amount."""
+    data_array = np.array([1.0, 2.0, 3.0], dtype=np.float32)
+    indices_array = np.array([(1, 4), (2, 5), (3, 6)], dtype=INDICES_DTYPE)
+    distributions_array = np.array(
+        [(2, 1.0, 0.5, np.nan, np.nan, np.nan, False),
+         (2, 2.0, 0.5, np.nan, np.nan, np.nan, False),
+         (2, 3.0, 0.5, np.nan, np.nan, np.nan, False)],
+        dtype=UNCERTAINTY_DTYPE,
+    )
+
+    dp = create_datapackage(fs=generic_directory_filesystem(dirpath=tmp_path), name="test")
+    _add_vector_with_distributions(dp, "r", data_array, indices_array, distributions_array)
+    dp.finalize_serialization()
+
+    dp2 = load_datapackage(generic_directory_filesystem(dirpath=tmp_path))
+    assert "distributions" in {r["kind"] for r in dp2.resources}
+
+
+def test_finalize_keeps_distributions_loc_mismatch(tmp_path):
+    """All uncertainty_type=0/1 but loc!=amount → must be retained."""
+    data_array = np.array([1.0, 2.0, 3.0], dtype=np.float32)
+    indices_array = np.array([(1, 4), (2, 5), (3, 6)], dtype=INDICES_DTYPE)
+    distributions_array = np.array(
+        [(0, 1.0, np.nan, np.nan, np.nan, np.nan, False),
+         (0, 9.0, np.nan, np.nan, np.nan, np.nan, False),  # loc != amount
+         (0, 3.0, np.nan, np.nan, np.nan, np.nan, False)],
+        dtype=UNCERTAINTY_DTYPE,
+    )
+
+    dp = create_datapackage(fs=generic_directory_filesystem(dirpath=tmp_path), name="test")
+    _add_vector_with_distributions(dp, "r", data_array, indices_array, distributions_array)
+    dp.finalize_serialization()
+
+    dp2 = load_datapackage(generic_directory_filesystem(dirpath=tmp_path))
+    assert "distributions" in {r["kind"] for r in dp2.resources}
+
+
+def test_finalize_mixed_groups_prunes_only_trivial(tmp_path):
+    """Two groups: trivial distributions pruned, real distributions kept."""
+    indices_array = np.array([(1, 4), (2, 5)], dtype=INDICES_DTYPE)
+    data_array = np.array([1.0, 2.0], dtype=np.float32)
+
+    trivial_dist = np.array(
+        [(0, 1.0, np.nan, np.nan, np.nan, np.nan, False),
+         (0, 2.0, np.nan, np.nan, np.nan, np.nan, False)],
+        dtype=UNCERTAINTY_DTYPE,
+    )
+    real_dist = np.array(
+        [(3, 1.0, 0.2, np.nan, np.nan, np.nan, False),
+         (3, 2.0, 0.2, np.nan, np.nan, np.nan, False)],
+        dtype=UNCERTAINTY_DTYPE,
+    )
+
+    dp = create_datapackage(fs=generic_directory_filesystem(dirpath=tmp_path), name="test")
+    _add_vector_with_distributions(dp, "trivial", data_array, indices_array, trivial_dist)
+    _add_vector_with_distributions(dp, "real", data_array, indices_array, real_dist)
+    dp.finalize_serialization()
+
+    dp2 = load_datapackage(generic_directory_filesystem(dirpath=tmp_path))
+    dist_resources = [r for r in dp2.resources if r["kind"] == "distributions"]
+    assert len(dist_resources) == 1
+    assert dist_resources[0]["group"] == "real"
+
+
+def test_rescale_array_parquet_roundtrip(tmp_path):
+    rescale_array = np.array([0.5, 1.0, 2.0])
+    indices_array = np.array([(1, 4), (2, 5), (3, 6)], dtype=INDICES_DTYPE)
+    data_array = np.array([100.0, 200.0, 300.0])
+
+    dp = create_datapackage(
+        fs=generic_directory_filesystem(dirpath=tmp_path),
+        name="scale-parquet-test",
+    )
+    dp.add_persistent_vector(
+        matrix="sa_matrix",
+        data_array=data_array,
+        name="sa-data-vector",
+        indices_array=indices_array,
+        rescale_array=rescale_array,
+        matrix_serialize_format_type=MatrixSerializeFormat.PARQUET,
+    )
+    dp.finalize_serialization()
+
+    dp2 = load_datapackage(generic_directory_filesystem(dirpath=tmp_path))
+    assert "sa-data-vector.rescale" in [o["name"] for o in dp2.resources]
+    loaded, meta = dp2.get_resource("sa-data-vector.rescale")
+    assert meta["kind"] == "rescale"
+    assert np.allclose(loaded, rescale_array)
+
+
+def test_simple_graph():
+    data = {
+        "some_matrix": [(1, 2, 3.14), (4, 5, 17, True), (8, 9, 11.11, False)],
+        "a different life": [
+            (99, 100, 101.234, False, "ignored"),
+            (1001, 1002, 777, 1),
+        ],
+    }
+    expected_resource = {
+        "category": "vector",
+        "profile": "data-resource",
+        "format": "npy",
+        "mediatype": "application/octet-stream",
+        "name": "some_matrix-data.flip",
+        "matrix": "some_matrix",
+        "kind": "flip",
+        "nrows": 3,
+        "path": "some_matrix-data.flip.npy",
+        "group": "some_matrix-data",
+    }
+    dp = simple_graph(data, name="foo", sequential=True)
+    assert dp.metadata["name"] == "foo"
+    assert dp.metadata["sequential"]
+    assert len(dp.metadata["resources"]) == 6
+    assert expected_resource in dp.metadata["resources"]
+
+    d, _ = dp.get_resource("some_matrix-data.flip")
+    assert np.allclose(d, np.array([False, True, False]))
+    d, _ = dp.get_resource("some_matrix-data.indices")
+    assert d["row"].sum() == 13
+    assert d["col"].sum() == 16
+    d, _ = dp.get_resource("some_matrix-data.data")
+    assert np.allclose(d, np.array([3.14, 17, 11.11]))
+
+    d, _ = dp.get_resource("a different life-data.flip")
+    assert np.allclose(d, np.array([False, True]))
+    d, _ = dp.get_resource("a different life-data.indices")
+    assert d["row"].sum() == 1100
+    assert d["col"].sum() == 1102
+    d, _ = dp.get_resource("a different life-data.data")
+    assert np.allclose(d, np.array([101.234, 777]))
+
+
+def _write_zip_datapackage(dirpath, filename="test.zip", **kwargs):
+    fs = generic_zipfile_filesystem(dirpath=dirpath, filename=filename, **kwargs)
+    dp = create_datapackage(fs=fs, name="test-zip-compression")
+    add_data(dp)
+    dp.finalize_serialization()
+    return dirpath / filename
+
+
+def test_zipfile_default_compression(tmp_path):
+    """Default compression is ZIP_DEFLATED; indices compress well so file is smaller than uncompressed."""
+    compressed_path = _write_zip_datapackage(tmp_path, filename="compressed.zip")
+    uncompressed_path = _write_zip_datapackage(tmp_path, filename="uncompressed.zip", compression=zipfile.ZIP_STORED)
+
+    with zipfile.ZipFile(compressed_path) as zf:
+        for info in zf.infolist():
+            if info.filename.endswith(".indices.npy"):
+                assert info.compress_type == zipfile.ZIP_DEFLATED
+
+    assert compressed_path.stat().st_size < uncompressed_path.stat().st_size
+
+
+def test_zipfile_stored_compression(tmp_path):
+    """ZIP_STORED writes uncompressed entries."""
+    zip_path = _write_zip_datapackage(tmp_path, compression=zipfile.ZIP_STORED)
+
+    with zipfile.ZipFile(zip_path) as zf:
+        for info in zf.infolist():
+            assert info.compress_type == zipfile.ZIP_STORED
+
+
+def test_zipfile_compressed_roundtrip(tmp_path):
+    """Data written with ZIP_DEFLATED can be read back correctly."""
+    zip_path = _write_zip_datapackage(tmp_path)
+    dp = load_datapackage(ZipFileSystem(str(zip_path)))
+    data, _ = dp.get_resource("sa-data-vector.data")
+    assert np.allclose(data, [2, 7, 12])
+
+
+REFERENCE_INDICES = np.array([(1, 4), (2, 5), (3, 6)], dtype=INDICES_DTYPE)
+
+
+def test_reference_array_stored():
+    dp = create_datapackage()
+    dp.add_persistent_vector(
+        matrix="sa_matrix",
+        data_array=np.array([2, 7, 12]),
+        name="sa-ref",
+        indices_array=REFERENCE_INDICES,
+        reference_array=np.array([True, False, False], dtype=bool),
+    )
+    data, _ = dp.get_resource("sa-ref.reference")
+    assert data.dtype == bool
+    assert list(data) == [True, False, False]
+
+
+def test_reference_array_not_stored_when_all_false():
+    dp = create_datapackage()
+    dp.add_persistent_vector(
+        matrix="sa_matrix",
+        data_array=np.array([2, 7, 12]),
+        name="sa-ref",
+        indices_array=REFERENCE_INDICES,
+        reference_array=np.array([False, False, False], dtype=bool),
+    )
+    assert "sa-ref.reference" not in [r["name"] for r in dp.resources]
+
+
+def test_reference_array_wrong_dtype():
+    dp = create_datapackage()
+    with pytest.raises(WrongDatatype):
+        dp.add_persistent_vector(
+            matrix="sa_matrix",
+            data_array=np.array([2, 7, 12]),
+            name="sa-ref",
+            indices_array=REFERENCE_INDICES,
+            reference_array=np.array([1, 0, 0], dtype=int),
+        )
+
+
+def test_reference_array_shape_mismatch():
+    dp = create_datapackage()
+    with pytest.raises(ShapeMismatch):
+        dp.add_persistent_vector(
+            matrix="sa_matrix",
+            data_array=np.array([2, 7, 12]),
+            name="sa-ref",
+            indices_array=REFERENCE_INDICES,
+            reference_array=np.array([True, False], dtype=bool),
+        )
+
+
+def test_reference_array_persistent_array():
+    dp = create_datapackage()
+    dp.add_persistent_array(
+        matrix="sa_matrix",
+        data_array=np.arange(12).reshape((3, 4)),
+        name="sa-ref-arr",
+        indices_array=REFERENCE_INDICES,
+        reference_array=np.array([False, True, False], dtype=bool),
+    )
+    data, _ = dp.get_resource("sa-ref-arr.reference")
+    assert list(data) == [False, True, False]
+
+
+def test_reference_array_dynamic_vector():
+    dp = create_datapackage()
+    dp.add_dynamic_vector(
+        interface=Dummy(),
+        matrix="sa_matrix",
+        name="sa-ref-dyn",
+        indices_array=REFERENCE_INDICES,
+        reference_array=np.array([False, False, True], dtype=bool),
+    )
+    data, _ = dp.get_resource("sa-ref-dyn.reference")
+    assert list(data) == [False, False, True]
+
+
+def test_reference_array_roundtrip(tmp_path):
+    fs = generic_zipfile_filesystem(dirpath=tmp_path, filename="ref.zip")
+    dp = create_datapackage(fs=fs, name="test-reference")
+    dp.add_persistent_vector(
+        matrix="sa_matrix",
+        data_array=np.array([2, 7, 12]),
+        name="sa-ref",
+        indices_array=REFERENCE_INDICES,
+        reference_array=np.array([True, False, True], dtype=bool),
+    )
+    dp.finalize_serialization()
+
+    loaded = load_datapackage(ZipFileSystem(str(tmp_path / "ref.zip")))
+    data, resource = loaded.get_resource("sa-ref.reference")
+    assert resource["kind"] == "reference"
+    assert data.dtype == bool
+    assert list(data) == [True, False, True]

@@ -1,0 +1,169 @@
+from typing import Optional, Tuple
+
+import numpy as np
+import numpy.typing as npt
+
+from stats_arrays.distributions.base import BoundedUncertaintyBase
+from stats_arrays.errors import ImproperBoundsError
+from stats_arrays.utils import ParamsArray, StatisticsResult, one_row_params_array
+
+
+class UniformUncertainty(BoundedUncertaintyBase):
+    """Continuous uniform distribution. In SciPy, the uniform distribution is defined from loc to loc+scale."""
+
+    id = 4
+    description = "Uniform uncertainty"
+
+    @classmethod
+    def random_variables(
+        cls,
+        params: ParamsArray,
+        size: int,
+        seeded_random: Optional[np.random.RandomState] = None,
+    ) -> npt.NDArray:
+        if seeded_random is None:
+            seeded_random = np.random.RandomState()
+        return seeded_random.uniform(
+            params["minimum"],  # Minimum (low)
+            params["maximum"],  # Maximum (high)
+            size=(size, params.shape[0]),
+        ).T
+
+    @classmethod
+    def cdf(cls, params: ParamsArray, vector: npt.NDArray) -> npt.NDArray:
+        from scipy import stats
+        vector = cls.check_2d_inputs(params, vector)
+        results = np.zeros(vector.shape)
+        for row in range(params.shape[0]):
+            results[row, :] = stats.uniform.cdf(
+                vector[row, :],
+                loc=params[row]["minimum"],
+                scale=params[row]["maximum"] - params[row]["minimum"],
+            )
+        return results
+
+    @classmethod
+    def ppf(cls, params: ParamsArray, percentages: npt.NDArray) -> npt.NDArray:
+        percentages = cls.check_2d_inputs(params, percentages)
+        scale = (params["maximum"] - params["minimum"]).reshape(params.shape[0], 1)
+        return percentages * scale + params["minimum"].reshape(params.shape[0], 1)
+
+    @classmethod
+    @one_row_params_array
+    def statistics(cls, params: ParamsArray) -> StatisticsResult:
+        mean = float(((params["maximum"] + params["minimum"]) / 2).flat[0])
+        return {
+            "mean": mean,
+            "mode": mean,
+            "median": mean,
+            "lower": float(params["minimum"].flat[0]),
+            "upper": float(params["maximum"].flat[0]),
+        }
+
+    @classmethod
+    @one_row_params_array
+    def pdf(
+        cls, params: ParamsArray, xs: Optional[npt.NDArray] = None
+    ) -> Tuple[npt.NDArray, npt.NDArray]:
+        if xs is None:
+            xs_array = np.array([params["minimum"], params["maximum"]]).reshape(
+                2,
+            )
+        else:
+            xs_array = xs
+        percentage = float((1 / (params["maximum"] - params["minimum"])).flat[0])
+        ys = np.array([percentage for x in xs_array])
+        return xs_array, ys
+
+
+class TriangularUncertainty(BoundedUncertaintyBase):
+    id = 5
+    description = "Triangular uncertainty"
+
+    @classmethod
+    def validate(cls, params: ParamsArray) -> None:
+        super(TriangularUncertainty, cls).validate(params)
+        bad = (params["loc"] > params["maximum"]) | (params["loc"] < params["minimum"])
+        if bad.any():
+            raise ImproperBoundsError(
+                f"Most likely value outside the given bounds. {cls._fmt_bad_rows(bad)}"
+            )
+
+    @classmethod
+    def random_variables(
+        cls,
+        params: ParamsArray,
+        size: int,
+        seeded_random: Optional[np.random.RandomState] = None,
+    ) -> npt.NDArray:
+        if seeded_random is None:
+            seeded_random = np.random.RandomState()
+        return seeded_random.triangular(
+            params["minimum"],  # Left
+            params["loc"],  # Mode
+            params["maximum"],  # Right
+            size=(size, params.shape[0]),
+        ).T
+
+    @classmethod
+    def cdf(cls, params: ParamsArray, vector: npt.NDArray) -> npt.NDArray:
+        from scipy import stats
+        vector = cls.check_2d_inputs(params, vector)
+        # Adjust parameters to (0,1) range
+        adjusted_means, scale = cls.rescale_to_unitary_interval(params)
+        # To be broadcasted correctly, scale and mins must be column vectors
+        scale.resize(scale.shape[0], 1)
+        mins = np.array(params["minimum"])
+        mins.resize(params.shape[0], 1)
+        # Adjust values to use cdf for to (0,1) range
+        adjusted_vector = (vector - mins) / scale
+        results = np.zeros(vector.shape)
+        for row in range(params.shape[0]):
+            results[row, :] = stats.triang.cdf(
+                adjusted_vector[row, :], adjusted_means[row]
+            )
+        return results
+
+    @classmethod
+    def ppf(cls, params: ParamsArray, percentages: npt.NDArray) -> npt.NDArray:
+        from scipy import stats
+        percentages = cls.check_2d_inputs(params, percentages)
+        adjusted_means, scale = cls.rescale_to_unitary_interval(params)
+        scale.resize(scale.shape[0], 1)
+        adjusted_means.resize(scale.shape[0], 1)
+        return cls.rescale_vector_to_params(
+            params, stats.triang.ppf(percentages, adjusted_means)
+        )
+
+    @classmethod
+    @one_row_params_array
+    def statistics(cls, params: ParamsArray) -> StatisticsResult:
+        mode = float(params["loc"].flat[0])
+        mean = float(((params["minimum"] + params["maximum"] + mode) / 3).flat[0])
+        lower, median, upper = cls.ppf(
+            params, np.array([[0.0125, 0.5, 0.9875]])
+        ).ravel()
+        return {
+            "mean": mean,
+            "median": float(median.flat[0]),
+            "mode": mode,
+            "lower": float(lower.flat[0]),
+            "upper": float(upper.flat[0]),
+        }
+
+    @classmethod
+    @one_row_params_array
+    def pdf(
+        cls, params: ParamsArray, xs: Optional[npt.NDArray] = None
+    ) -> Tuple[npt.NDArray, npt.NDArray]:
+        from scipy import stats
+        adjusted_means, scale = cls.rescale_to_unitary_interval(params)
+        if xs is None:
+            xs = np.linspace(
+                float(params["minimum"].flat[0]),
+                float(params["maximum"].flat[0]),
+                cls.default_number_points_in_pdf,
+            )
+        adj_xs = (xs - params["minimum"]) / scale
+        ys = stats.triang.pdf(adj_xs, adjusted_means) / scale
+        return xs, ys.ravel()

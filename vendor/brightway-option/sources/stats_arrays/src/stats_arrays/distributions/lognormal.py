@@ -1,0 +1,142 @@
+from typing import Optional, Tuple
+
+import numpy as np
+import numpy.typing as npt
+
+from stats_arrays.distributions.base import UncertaintyBase
+from stats_arrays.errors import InvalidParamsError
+from stats_arrays.utils import ParamsArray, StatisticsResult, one_row_params_array
+
+
+class LognormalUncertainty(UncertaintyBase):
+    id = 2
+    description = "Lognormal uncertainty"
+
+    @classmethod
+    def validate(cls, params: ParamsArray) -> None:
+        """Custom validation because mean gets log-transformed"""
+        bad = np.isnan(params["loc"])
+        if bad.any():
+            raise InvalidParamsError(
+                f"Real location (mu) values are required for lognormal uncertainties. "
+                f"{cls._fmt_bad_rows(bad)}"
+            )
+        bad = np.isnan(params["scale"]) | (params["scale"] <= 0)
+        if bad.any():
+            raise InvalidParamsError(
+                f"Real, positive scale (sigma) values are required for lognormal uncertainties. "
+                f"{cls._fmt_bad_rows(bad)}"
+            )
+
+    @classmethod
+    def random_variables(
+        cls,
+        params: ParamsArray,
+        size: int,
+        seeded_random: Optional[np.random.RandomState] = None,
+    ) -> npt.NDArray:
+        if seeded_random is None:
+            seeded_random = np.random.RandomState()
+        data = seeded_random.lognormal(
+            params["loc"], params["scale"], size=(size, params.shape[0])  # Mu  # Sigma
+        ).T
+        # Negative is needed because log loses sign information.
+        # Error handling not included, as this loop is called many times
+        data[params["negative"], :] = -1 * data[params["negative"], :]
+        return data
+
+    @classmethod
+    def cdf(cls, params: ParamsArray, vector: npt.NDArray) -> npt.NDArray:
+        from scipy import stats
+        vector[params["negative"]] = -1 * vector[params["negative"]]
+        if vector.ndim == 1 or vector.shape[1] == 1:
+            # Can do all at once, **much** faster
+            results = stats.lognorm.cdf(
+                vector.reshape((-1,)), params["scale"], scale=np.exp(params["loc"])
+            ).reshape((-1, 1))
+        else:
+            vector = cls.check_2d_inputs(params, vector)
+            results = np.zeros(vector.shape)
+            for row in range(params.shape[0]):
+                results[row, :] = stats.lognorm.cdf(
+                    vector[row, :],
+                    params["scale"][row],
+                    scale=np.exp(params["loc"][row]),
+                )
+        return results
+
+    @classmethod
+    def ppf(cls, params: ParamsArray, percentages: npt.NDArray) -> npt.NDArray:
+        from scipy import stats
+        if percentages.ndim == 1 or percentages.shape[1] == 1:
+            # Can do all at once, **much** faster
+            results = stats.lognorm.ppf(
+                percentages.reshape((-1,)), params["scale"], scale=np.exp(params["loc"])
+            ).reshape((-1, 1))
+        else:
+            percentages = cls.check_2d_inputs(params, percentages)
+            results = np.zeros(percentages.shape)
+            for row in range(percentages.shape[0]):
+                results[row, :] = stats.lognorm.ppf(
+                    percentages[row, :],
+                    params["scale"][row],
+                    scale=np.exp(params["loc"][row]),
+                )
+        results[params["negative"]] = -1 * results[params["negative"]]
+        return results
+
+    @classmethod
+    @one_row_params_array
+    def statistics(cls, params: ParamsArray) -> StatisticsResult:
+        negative = -1 if bool(params["negative"].flat[0]) else 1
+        mu = float(params["loc"].flat[0])
+        sigma = float(params["scale"].flat[0])
+        geometric_mu = float(np.exp(mu))
+        geometric_sigma = float(np.exp(sigma))
+        mean = float(np.exp(mu + (sigma**2) / 2))
+        mode = float(np.exp(mu - sigma**2))
+        ci_95_lower = geometric_mu / (geometric_sigma**2)
+        ci_95_upper = geometric_mu * (geometric_sigma**2)
+        if negative == -1:
+            ci_95_lower, ci_95_upper = ci_95_upper, ci_95_lower
+        return {
+            "median": negative * geometric_mu,
+            "mode": negative * mode,
+            "mean": negative * mean,
+            "lower": negative * ci_95_lower,
+            "upper": negative * ci_95_upper,
+        }
+
+    @classmethod
+    @one_row_params_array
+    def pdf(
+        cls, params: ParamsArray, xs: Optional[npt.NDArray] = None
+    ) -> Tuple[npt.NDArray, npt.NDArray]:
+        """Generate probability distribution function for lognormal distribution."""
+        from scipy import stats
+        n = params["negative"]
+        if xs is None:
+            # Find nice range to graph
+            lower = (
+                (-1 if n else 1)
+                * np.exp(params["loc"])
+                / (np.exp(params["scale"]) ** cls.standard_deviations_in_default_range)
+            )[0, 0]
+            upper = (
+                (-1 if n else 1)
+                * np.exp(params["loc"])
+                * (np.exp(params["scale"]) ** cls.standard_deviations_in_default_range)
+            )[0, 0]
+            if n:
+                lower, upper = upper, lower
+
+            xs = np.linspace(
+                (lower if np.isnan(params["minimum"]) else params["minimum"]).ravel(),
+                (upper if np.isnan(params["maximum"]) else params["maximum"]).ravel(),
+                cls.default_number_points_in_pdf,
+            ).ravel()
+
+        ys = stats.lognorm.pdf(
+            -1 * xs if n else xs, params["scale"], scale=np.exp(params["loc"])
+        )
+        return xs, ys.ravel()
